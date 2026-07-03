@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GameAudio } from '../game/audio';
 import { getRandomWordForWave } from '../game/words';
+import GameHUD from './GameHUD';
 
 export default function GameCanvas({
   username,
