@@ -49,7 +49,7 @@ export default function ProfileEdit({ initialUsername, initialColor, initialSkil
     if (shipColor === 'green') strokeColor = 'var(--neon-green)';
 
     return (
-      <svg width="34" height="34" viewBox="0 0 40 40" style={{ filter: `drop-shadow(0 0 5px ${strokeColor})` }}>
+      <svg width="24" height="24" viewBox="0 0 40 40" style={{ filter: `drop-shadow(0 0 4px ${strokeColor})` }}>
         <path
           d="M 20 6 L 32 28 L 20 22 L 8 28 Z"
           fill="none"
@@ -136,8 +136,8 @@ export default function ProfileEdit({ initialUsername, initialColor, initialSkil
           }
 
           .ship-option-circle {
-            width: 52px;
-            height: 52px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             border: 1px solid rgba(255, 255, 255, 0.08);
             background: rgba(255, 255, 255, 0.01);
@@ -156,19 +156,19 @@ export default function ProfileEdit({ initialUsername, initialColor, initialSkil
 
           .ship-option-circle.selected.blue {
             border-color: var(--neon-blue);
-            box-shadow: 0 0 15px rgba(74, 144, 226, 0.2);
+            box-shadow: 0 0 8px rgba(74, 144, 226, 0.25);
             background: rgba(74, 144, 226, 0.05);
           }
 
           .ship-option-circle.selected.red {
             border-color: var(--neon-red);
-            box-shadow: 0 0 15px rgba(207, 64, 66, 0.2);
+            box-shadow: 0 0 8px rgba(207, 64, 66, 0.25);
             background: rgba(207, 64, 66, 0.05);
           }
 
           .ship-option-circle.selected.green {
             border-color: var(--neon-green);
-            box-shadow: 0 0 15px rgba(46, 189, 89, 0.2);
+            box-shadow: 0 0 8px rgba(46, 189, 89, 0.25);
             background: rgba(46, 189, 89, 0.05);
           }
 
@@ -264,8 +264,8 @@ export default function ProfileEdit({ initialUsername, initialColor, initialSkil
                 <div
                   key={idx}
                   style={{
-                    width: '36px',
-                    height: '36px',
+                    width: '32px',
+                    height: '32px',
                     borderRadius: '50%',
                     border: isSlotSelected 
                       ? `2px solid #ffffff` 
@@ -278,9 +278,9 @@ export default function ProfileEdit({ initialUsername, initialColor, initialSkil
                     justifyContent: 'center',
                     color: skillData ? skillData.color : 'transparent',
                     boxShadow: isSlotSelected
-                      ? `0 0 12px #4a90e2`
-                      : (skillData ? `0 0 6px ${skillData.color}22` : 'none'),
-                    transform: isSlotSelected ? 'scale(1.1)' : 'none',
+                      ? `0 0 8px #4a90e2`
+                      : (skillData ? `0 0 4px ${skillData.color}22` : 'none'),
+                    transform: isSlotSelected ? 'scale(1.05)' : 'none',
                     transition: 'all 0.25s cubic-bezier(0.19, 1, 0.22, 1)',
                     cursor: 'pointer'
                   }}
