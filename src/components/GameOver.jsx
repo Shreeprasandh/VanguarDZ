@@ -10,24 +10,24 @@ export default function GameOver({ score, wave, isMultiplayer, teamPlayers, onRe
   const isSacrificeWave = wave >= 100;
 
   return (
-    <div className="modal-overlay" style={{ background: 'rgba(0, 0, 0, 0.9)', backdropFilter: 'blur(8px)', zIndex: 1000 }}>
+    <div className="modal-overlay" style={{ background: 'rgba(0, 0, 0, 0.9)', backdropFilter: 'blur(10px)', zIndex: 1000 }}>
       <div 
-        className="glass-panel" 
         style={{ 
           maxWidth: '500px',
-          background: 'rgba(6, 6, 10, 0.96)',
-          border: '1px solid rgba(255, 51, 102, 0.15)', // Faint red/laser outline
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.9), 0 0 40px rgba(255, 51, 102, 0.05)',
-          padding: '3.5rem',
-          borderRadius: '2px',
+          width: '100%',
+          background: 'transparent',
+          border: 'none',
+          boxShadow: 'none',
+          padding: '2rem 1rem',
+          textAlign: 'center',
           animation: 'fadeIn 0.5s ease-out'
         }}
       >
         <style>{`
           .defeat-title {
             font-family: var(--font-display);
-            font-size: 1.6rem;
-            letter-spacing: 6px;
+            font-size: 1.7rem;
+            letter-spacing: 5px;
             text-transform: uppercase;
             margin-bottom: 2rem;
             text-align: center;
@@ -67,17 +67,17 @@ export default function GameOver({ score, wave, isMultiplayer, teamPlayers, onRe
 
           .btn-defeat-action:hover {
             border-color: var(--neon-red);
-            background: rgba(255, 51, 102, 0.02);
+            background: rgba(207, 64, 66, 0.02);
             color: var(--neon-red);
-            text-shadow: 0 0 5px rgba(255, 51, 102, 0.3);
+            text-shadow: 0 0 5px rgba(207, 64, 66, 0.3);
             letter-spacing: 4px;
           }
         `}</style>
 
         {isSacrificeWave ? (
           <>
-            <h1 className="defeat-title" style={{ color: 'var(--neon-blue)', textShadow: '0 0 10px rgba(51, 204, 255, 0.4)' }}>
-              // HERO SACRIFICED
+            <h1 className="defeat-title" style={{ color: 'var(--neon-blue)', textShadow: '0 0 10px rgba(74, 144, 226, 0.4)' }}>
+              HERO SACRIFICED
             </h1>
             
             <div style={{
@@ -88,8 +88,8 @@ export default function GameOver({ score, wave, isMultiplayer, teamPlayers, onRe
               textAlign: 'justify',
               marginBottom: '2.5rem',
               letterSpacing: '0.5px',
-              borderTop: '1px dashed rgba(255, 255, 255, 0.1)',
-              borderBottom: '1px dashed rgba(255, 255, 255, 0.1)',
+              borderTop: '1px dashed rgba(255, 255, 255, 0.12)',
+              borderBottom: '1px dashed rgba(255, 255, 255, 0.12)',
               padding: '1.5rem 0.5rem',
               fontWeight: '300'
             }}>
@@ -104,8 +104,8 @@ export default function GameOver({ score, wave, isMultiplayer, teamPlayers, onRe
           </>
         ) : (
           <>
-            <h1 className="defeat-title" style={{ color: 'var(--neon-red)', textShadow: '0 0 10px rgba(255, 51, 102, 0.4)' }}>
-              // SHIP DESTROYED
+            <h1 className="defeat-title" style={{ color: 'var(--neon-red)', textShadow: '0 0 10px rgba(207, 64, 66, 0.4)' }}>
+              SHIP DESTROYED
             </h1>
             
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', fontSize: '0.95rem', letterSpacing: '0.5px', fontFamily: 'var(--font-body)', fontWeight: 300 }}>
@@ -126,8 +126,8 @@ export default function GameOver({ score, wave, isMultiplayer, teamPlayers, onRe
 
             {isMultiplayer && teamPlayers && teamPlayers.length > 0 && (
               <div style={{ marginTop: '2.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '1.5rem' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem', fontFamily: 'var(--font-display)', opacity: 0.7 }}>
-                  // CO-OP SQUAD REPORTS
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem', fontFamily: 'var(--font-display)', opacity: 0.6 }}>
+                  CO-OP SQUAD REPORTS
                 </div>
                 {teamPlayers.map((player) => (
                   <div key={player.socketId} className="defeat-divider-row" style={{ padding: '0.6rem 0.5rem', fontSize: '0.9rem' }}>

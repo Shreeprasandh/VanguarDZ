@@ -2,54 +2,106 @@ import React from 'react';
 
 export default function Leaderboard({ leaderboard, onClose }) {
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="glass-panel modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>Online Leaderboard</h2>
-          <button className="modal-close-btn" onClick={onClose}>&times;</button>
-        </div>
+    <div className="modal-overlay" onClick={onClose} style={{ background: 'rgba(0, 0, 0, 0.9)', backdropFilter: 'blur(10px)', zIndex: 1000 }}>
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        style={{ 
+          maxWidth: '520px',
+          width: '100%',
+          background: 'transparent',
+          border: 'none',
+          boxShadow: 'none',
+          padding: '2rem 1rem',
+          textAlign: 'center',
+          animation: 'fadeIn 0.3s ease-out'
+        }}
+      >
+        <style>{`
+          .leaderboard-title {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            color: #ffffff;
+            margin-bottom: 2rem;
+            text-align: center;
+          }
+
+          .lb-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+            padding: 0.85rem 0.5rem;
+            font-family: var(--font-display);
+            letter-spacing: 1.5px;
+            font-size: 0.92rem;
+          }
+
+          .lb-row:last-of-type {
+            border-bottom: none;
+          }
+
+          .btn-lb-close {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #ffffff;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 0.8rem 2rem;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+            border-radius: 2px;
+            margin-top: 3rem;
+          }
+
+          .btn-lb-close:hover {
+            border-color: var(--neon-blue);
+            background: rgba(74, 144, 226, 0.02);
+            color: var(--neon-blue);
+            text-shadow: 0 0 5px rgba(74, 144, 226, 0.3);
+            letter-spacing: 4px;
+          }
+        `}</style>
+
+        <h1 className="leaderboard-title">
+          GLOBAL HIGH SCORES
+        </h1>
         
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem', textAlign: 'left' }}>
-          Showing players currently online. Score and level reset when the browser tab is closed.
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '2.5rem', fontFamily: 'var(--font-body)', fontWeight: 300 }}>
+          Top pilot scores recorded across solo offensive deployments.
         </p>
 
         {leaderboard.length === 0 ? (
-          <p style={{ padding: '2rem 0', color: 'var(--text-secondary)' }}>No other players online.</p>
+          <p style={{ padding: '2rem 0', color: 'var(--text-secondary)', fontFamily: 'var(--font-body)', fontSize: '0.9rem', fontStyle: 'italic', opacity: 0.5 }}>
+            No high scores recorded on grid.
+          </p>
         ) : (
-          <table className="leaderboard-table">
-            <thead>
-              <tr>
-                <th style={{ width: '60px' }}>Rank</th>
-                <th>Player</th>
-                <th style={{ textAlign: 'right' }}>Score</th>
-                <th style={{ textAlign: 'right' }}>Level</th>
-                <th style={{ textAlign: 'center' }}>State</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((player, index) => (
-                <tr key={index}>
-                  <td className="rank">{index + 1}</td>
-                  <td style={{ fontWeight: '500' }}>{player.username}</td>
-                  <td style={{ textAlign: 'right', fontFamily: 'var(--font-display)', color: 'var(--neon-blue)' }}>
-                    {player.score.toLocaleString()}
-                  </td>
-                  <td style={{ textAlign: 'right', fontFamily: 'var(--font-display)' }}>
-                    {player.level}
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <span className={`status-badge ${player.state}`}>
-                      {player.state}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+            {leaderboard.map((item, index) => (
+              <div key={index} className="lb-row">
+                <span style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', width: '24px', textAlign: 'left', fontSize: '0.8rem' }}>
+                    {(index + 1).toString().padStart(2, '0')}
+                  </span>
+                  <span style={{ color: '#ffffff', fontWeight: 500 }}>
+                    {item.username}
+                  </span>
+                </span>
+                <span style={{ color: 'var(--neon-blue)', fontWeight: 'bold' }}>
+                  {item.score.toLocaleString()} PTS
+                </span>
+              </div>
+            ))}
+          </div>
         )}
 
-        <button className="btn btn-primary" style={{ marginTop: '1.5rem' }} onClick={onClose}>
-          Close
+        <button className="btn-lb-close" onClick={onClose}>
+          Close Terminal
         </button>
       </div>
     </div>

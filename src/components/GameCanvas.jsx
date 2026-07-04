@@ -771,11 +771,19 @@ export default function GameCanvas({
       // Determine spawn column (keep within central 60% of screen)
       const x = canvas.width * 0.25 + Math.random() * (canvas.width * 0.5);
       
-      // In co-op, assign player color targets
-      let color = shipColor;
-      if (isMultiplayer && players && players.length > 0) {
-        const colors = players.map(p => p.color).filter(Boolean);
-        color = colors[Math.floor(Math.random() * colors.length)] || shipColor;
+      // In co-op, assign player color targets. In solo, assign based on rank/type.
+      let color;
+      if (isMultiplayer) {
+        color = shipColor;
+        if (players && players.length > 0) {
+          const colors = players.map(p => p.color).filter(Boolean);
+          color = colors[Math.floor(Math.random() * colors.length)] || shipColor;
+        }
+      } else {
+        if (type === 'drone') color = 'orange';
+        else if (type === 'interceptor') color = 'magenta';
+        else if (type === 'cruiser') color = 'gold';
+        else color = 'purple';
       }
 
       const enemy = {
@@ -1724,7 +1732,16 @@ export default function GameCanvas({
   const togglePause = () => {
     if (stateRef.current.isLocalGameOver) return;
     GameAudio.play('click');
-    setPaused(prev => !prev);
+    setPaused(prev => {
+      const next = !prev;
+      if (!next) {
+        // Refocus canvas after resuming to receive keypresses
+        setTimeout(() => {
+          canvasRef.current?.focus();
+        }, 50);
+      }
+      return next;
+    });
   };
 
   return (

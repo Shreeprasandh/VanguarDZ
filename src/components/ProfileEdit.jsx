@@ -37,16 +37,16 @@ export default function ProfileEdit({ initialUsername, initialColor, onSave, onC
   };
 
   return (
-    <div className="modal-overlay" style={{ background: 'rgba(0, 0, 0, 0.85)', backdropFilter: 'blur(8px)', zIndex: 1000 }}>
+    <div className="modal-overlay" style={{ background: 'rgba(0, 0, 0, 0.88)', backdropFilter: 'blur(10px)', zIndex: 1000 }}>
       <div 
-        className="glass-panel" 
         style={{ 
           maxWidth: '440px',
-          background: 'rgba(6, 6, 10, 0.96)',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(51, 204, 255, 0.03)',
-          padding: '3rem',
-          borderRadius: '2px',
+          width: '100%',
+          background: 'transparent',
+          border: 'none',
+          boxShadow: 'none',
+          padding: '2rem 1rem',
+          textAlign: 'center',
           animation: 'fadeIn 0.4s ease-out'
         }}
       >
@@ -54,23 +54,23 @@ export default function ProfileEdit({ initialUsername, initialColor, onSave, onC
           .console-label {
             font-family: var(--font-display);
             font-size: 0.8rem;
-            letter-spacing: 2px;
+            letter-spacing: 2.5px;
             text-transform: uppercase;
             color: var(--text-secondary);
             margin-bottom: 0.8rem;
-            text-align: left;
-            opacity: 0.7;
+            text-align: center;
+            opacity: 0.6;
           }
           
           .console-input {
             width: 100%;
             background: transparent;
             border: none;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
             color: #ffffff;
             font-family: var(--font-display);
-            font-size: 1.15rem;
-            letter-spacing: 3px;
+            font-size: 1.2rem;
+            letter-spacing: 4px;
             padding: 0.5rem 0;
             margin-bottom: 2.5rem;
             outline: none;
@@ -81,14 +81,13 @@ export default function ProfileEdit({ initialUsername, initialColor, onSave, onC
           
           .console-input:focus {
             border-bottom: 1px solid var(--neon-blue);
-            box-shadow: 0 4px 12px -6px rgba(51, 204, 255, 0.2);
           }
 
           .ship-option-circle {
-            width: 72px;
-            height: 72px;
+            width: 68px;
+            height: 68px;
             border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             background: rgba(255, 255, 255, 0.01);
             display: flex;
             align-items: center;
@@ -98,27 +97,27 @@ export default function ProfileEdit({ initialUsername, initialColor, onSave, onC
           }
 
           .ship-option-circle:hover {
-            border-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.25);
             background: rgba(255, 255, 255, 0.02);
             transform: scale(1.05);
           }
 
           .ship-option-circle.selected.blue {
             border-color: var(--neon-blue);
-            box-shadow: 0 0 15px rgba(51, 204, 255, 0.2);
-            background: rgba(51, 204, 255, 0.05);
+            box-shadow: 0 0 15px rgba(74, 144, 226, 0.2);
+            background: rgba(74, 144, 226, 0.05);
           }
 
           .ship-option-circle.selected.red {
             border-color: var(--neon-red);
-            box-shadow: 0 0 15px rgba(255, 51, 102, 0.2);
-            background: rgba(255, 51, 102, 0.05);
+            box-shadow: 0 0 15px rgba(207, 64, 66, 0.2);
+            background: rgba(207, 64, 66, 0.05);
           }
 
           .ship-option-circle.selected.green {
             border-color: var(--neon-green);
-            box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
-            background: rgba(57, 255, 20, 0.05);
+            box-shadow: 0 0 15px rgba(46, 189, 89, 0.2);
+            background: rgba(46, 189, 89, 0.05);
           }
 
           .btn-console-submit {
@@ -129,7 +128,7 @@ export default function ProfileEdit({ initialUsername, initialColor, onSave, onC
             color: #ffffff;
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.15);
-            padding: 0.7rem 2rem;
+            padding: 0.75rem 2rem;
             width: 100%;
             cursor: pointer;
             transition: all 0.2s;
@@ -144,8 +143,8 @@ export default function ProfileEdit({ initialUsername, initialColor, onSave, onC
           }
         `}</style>
         
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '2.5rem', color: '#ffffff' }}>
-          // PILOT IDENTITY
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '3rem', color: '#ffffff' }}>
+          PILOT IDENTITY
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -161,7 +160,7 @@ export default function ProfileEdit({ initialUsername, initialColor, onSave, onC
             autoFocus
           />
 
-          <div className="console-label" style={{ marginBottom: '1.2rem' }}>Spaceship Configuration</div>
+          <div className="console-label" style={{ marginBottom: '1.5rem' }}>Spaceship Configuration</div>
           <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', marginBottom: '3.5rem' }}>
             <div
               className={`ship-option-circle ${color === 'red' ? 'selected red' : ''}`}
@@ -196,10 +195,10 @@ export default function ProfileEdit({ initialUsername, initialColor, onSave, onC
                   color: 'rgba(255,255,255,0.3)', 
                   fontFamily: 'var(--font-display)', 
                   fontSize: '0.8rem', 
-                  letterSpacing: '1px',
+                  letterSpacing: '1.5px',
                   cursor: 'pointer',
                   textTransform: 'uppercase',
-                  marginTop: '0.5rem',
+                  marginTop: '0.8rem',
                   outline: 'none'
                 }} 
                 onClick={() => { GameAudio.play('click'); onCancel(); }}

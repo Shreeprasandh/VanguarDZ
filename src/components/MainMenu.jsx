@@ -27,7 +27,7 @@ export default function MainMenu({
     }
   };
 
-  // Helper to draw a small pointing vector ship cursor next to the hovered button
+  // Small pointing vector ship cursor next to the hovered button
   const renderPointer = (btnId) => {
     if (hoveredBtn !== btnId) return <div className="menu-btn-pointer" />;
     
@@ -102,25 +102,25 @@ export default function MainMenu({
           100% { transform: scaleY(1.2) translateY(1px); opacity: 0.65; }
         }
 
-        /* Borderless minimal styling */
         .menu-item-row {
           display: flex;
           align-items: center;
           justify-content: center;
           position: relative;
-          margin-bottom: 1.2rem;
+          margin-bottom: 1.5rem;
           width: 100%;
         }
 
         .menu-btn-pointer {
-          width: 32px;
+          position: absolute;
+          left: calc(50% - 90px);
+          width: 14px;
           height: 14px;
           display: flex;
           align-items: center;
-          justify-content: flex-end;
-          margin-right: 12px;
+          justify-content: center;
           opacity: 0;
-          transform: translateX(-8px);
+          transform: translateX(-10px);
           transition: all 0.25s cubic-bezier(0.19, 1, 0.22, 1);
         }
 
@@ -143,7 +143,7 @@ export default function MainMenu({
           padding: 0.4rem 0.5rem;
           position: relative;
           outline: none;
-          text-align: left;
+          text-align: center;
         }
 
         .minimal-text-btn:hover {
@@ -167,7 +167,6 @@ export default function MainMenu({
           width: 100%;
         }
 
-        /* Leaderboard link styled smaller and subtle */
         .leaderboard-link {
           background: transparent;
           border: none;
@@ -186,14 +185,27 @@ export default function MainMenu({
         .leaderboard-link:hover {
           opacity: 0.7;
           color: var(--neon-blue);
-          text-shadow: 0 0 5px rgba(51, 204, 255, 0.4);
+          text-shadow: 0 0 5px rgba(74, 144, 226, 0.4);
         }
       `}</style>
 
-      {/* Futuristic Game Name VanguarD */}
-      <h1 className="game-title" style={{ fontSize: '3.6rem', letterSpacing: '14px', marginBottom: '3rem' }}>
-        Vanguar<span style={{ color: '#abb4c4', textShadow: '0 0 12px rgba(171, 180, 196, 0.5)' }}>D</span>
-      </h1>
+      {/* Decorative Title Block */}
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '4rem' }}>
+        {/* Sleek top corner lines */}
+        <div style={{ position: 'absolute', top: '-15px', left: '-20px', width: '24px', height: '8px', borderTop: '1px solid rgba(255,255,255,0.12)', borderLeft: '1px solid rgba(255,255,255,0.12)' }} />
+        <div style={{ position: 'absolute', top: '-15px', right: '-20px', width: '24px', height: '8px', borderTop: '1px solid rgba(255,255,255,0.12)', borderRight: '1px solid rgba(255,255,255,0.12)' }} />
+        
+        <h1 className="game-title" style={{ fontSize: '3.6rem', letterSpacing: '14px', margin: '0', padding: '0 0 0 14px', textTransform: 'uppercase', color: '#ffffff' }}>
+          Vanguar<span style={{ color: 'var(--neon-yellow)', textShadow: '0 0 8px rgba(217, 167, 82, 0.35)' }}>D</span>
+        </h1>
+        <span style={{ fontSize: '0.62rem', fontFamily: 'var(--font-display)', letterSpacing: '6px', color: 'rgba(255, 255, 255, 0.22)', textTransform: 'uppercase', marginTop: '0.8rem' }}>
+          Defensive Targeting Matrix
+        </span>
+
+        {/* Sleek bottom corner lines */}
+        <div style={{ position: 'absolute', bottom: '-15px', left: '-20px', width: '24px', height: '8px', borderBottom: '1px solid rgba(255,255,255,0.12)', borderLeft: '1px solid rgba(255,255,255,0.12)' }} />
+        <div style={{ position: 'absolute', bottom: '-15px', right: '-20px', width: '24px', height: '8px', borderBottom: '1px solid rgba(255,255,255,0.12)', borderRight: '1px solid rgba(255,255,255,0.12)' }} />
+      </div>
       
       {/* Dynamic Animated Avatar Profile Trigger */}
       <div 
@@ -249,12 +261,18 @@ export default function MainMenu({
             </button>
           </div>
 
-          <button 
-            className="leaderboard-link"
-            onClick={() => { handleButtonClick(); onOpenLeaderboard(); }}
-          >
-            // Leaderboard
-          </button>
+          <div className="menu-item-row" style={{ marginTop: '0.5rem' }}>
+            {renderPointer('leader')}
+            <button 
+              className="minimal-text-btn"
+              style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.35)', letterSpacing: '3px' }}
+              onMouseEnter={() => setHoveredBtn('leader')}
+              onMouseLeave={() => setHoveredBtn(null)}
+              onClick={() => { handleButtonClick(); onOpenLeaderboard(); }}
+            >
+              Leaderboard
+            </button>
+          </div>
         </div>
       ) : (
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', animation: 'fadeIn 0.3s ease' }}>
@@ -352,7 +370,7 @@ export default function MainMenu({
         }}
         onClick={() => { handleButtonClick(); onOpenStory(); }}
       >
-        // Story
+        Story
       </button>
     </div>
   );

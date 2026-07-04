@@ -245,7 +245,7 @@ export default function Lobby({ roomCode, players, localPlayerId, onSelectColor,
 
       {/* Header section */}
       <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.25rem', letterSpacing: '4px', textTransform: 'uppercase', color: '#ffffff' }}>
-        // CO-OP FREQUENCY ACTIVE
+        CO-OP FREQUENCY ACTIVE
       </div>
       <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', letterSpacing: '1.5px', fontFamily: 'var(--font-display)', marginTop: '0.6rem', opacity: 0.6 }}>
         TRANSMITTING ON CODE: {roomCode}
@@ -308,7 +308,7 @@ export default function Lobby({ roomCode, players, localPlayerId, onSelectColor,
       {localPlayerInRoom && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '3.5rem' }}>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'var(--font-display)', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '1.2rem', opacity: 0.7 }}>
-            // Select Defensive Color
+            Select Defensive Color
           </div>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
             {['red', 'blue', 'green'].map((color) => {
@@ -345,7 +345,7 @@ export default function Lobby({ roomCode, players, localPlayerId, onSelectColor,
           </>
         ) : (
           <div style={{ fontFamily: 'var(--font-display)', color: 'var(--text-secondary)', fontSize: '0.8rem', letterSpacing: '2px', textTransform: 'uppercase', opacity: 0.5, marginBottom: '1rem' }}>
-            // Awaiting Host command launch...
+            Awaiting Host command launch...
           </div>
         )}
 
@@ -385,7 +385,7 @@ export default function Lobby({ roomCode, players, localPlayerId, onSelectColor,
             }}
           >
             <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', color: 'var(--neon-red)', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
-              // PILOT REGISTRATION CONFLICT
+              PILOT REGISTRATION CONFLICT
             </div>
             
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.95rem', lineHeight: '1.7', color: '#dcdfe8', marginBottom: '2.5rem', fontWeight: 300, textAlign: 'justify' }}>

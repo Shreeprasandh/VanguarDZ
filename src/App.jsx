@@ -208,6 +208,15 @@ export default function App() {
   const handleGameOver = (finalScore, waveReached) => {
     setGameStats({ score: finalScore, wave: waveReached });
     setScreen('gameover');
+
+    // Submit score to persistent leaderboard on game over if solo
+    if (!isMultiplayer && socketRef.current && socketConnected) {
+      socketRef.current.send(JSON.stringify({
+        type: 'SUBMIT_SCORE',
+        username: username,
+        score: finalScore
+      }));
+    }
   };
 
   const handleReturnMenu = () => {

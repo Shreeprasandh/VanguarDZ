@@ -4,14 +4,13 @@ import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
-
-// Serve static files from the React dist directory after building
 app.use(express.static(path.join(__dirname, 'dist')));
 
 const server = createServer(app);
@@ -20,6 +19,25 @@ const wss = new WebSocketServer({ server });
 // Data structures
 const onlinePlayers = new Map(); // socketId -> { socket, username, score, level, state: 'lobby'|'playing', roomId }
 const rooms = new Map(); // roomId -> { code, players: [], state: 'lobby'|'playing', wave: 1, wordTargetProgress: {}, hostId }
+
+const LEADERBOARD_FILE = path.join(__dirname, 'leaderboard.json');
+let highScores = [];
+try {
+  if (fs.existsSync(LEADERBOARD_FILE)) {
+    highScores = JSON.parse(fs.readFileSync(LEADERBOARD_FILE, 'utf8'));
+  }
+} catch (e) {
+  console.log('Failed to load leaderboard.json, starting empty.', e);
+}
+
+function broadcastHighScores() {
+  const payload = JSON.stringify({ type: 'LEADERBOARD_UPDATE', leaderboard: highScores });
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(payload);
+    }
+  });
+}
 
 // Helpers
 function generateRoomCode() {
@@ -32,20 +50,7 @@ function generateRoomCode() {
 }
 
 function broadcastLeaderboard() {
-  const list = Array.from(onlinePlayers.values()).map(p => ({
-    username: p.username,
-    score: p.score,
-    level: p.level,
-    state: p.state
-  })).sort((a, b) => b.score - a.score);
-
-  const payload = JSON.stringify({ type: 'LEADERBOARD_UPDATE', leaderboard: list });
-  
-  for (const player of onlinePlayers.values()) {
-    if (player.socket.readyState === WebSocket.OPEN) {
-      player.socket.send(payload);
-    }
-  }
+  broadcastHighScores();
 }
 
 function sendToRoom(roomId, messageObj, excludeSocketId = null) {
@@ -94,7 +99,7 @@ wss.on('connection', (ws) => {
   });
 
   // Send initial leaderboard update to new connector
-  broadcastLeaderboard();
+  broadcastHighScores();
 
   ws.on('message', (message) => {
     try {
@@ -105,14 +110,40 @@ wss.on('connection', (ws) => {
       switch (data.type) {
         case 'REGISTER': {
           player.username = data.username || player.username;
-          broadcastLeaderboard();
+          broadcastHighScores();
+          break;
+        }
+
+        case 'SUBMIT_SCORE': {
+          const { username, score } = data;
+          if (!username || typeof score !== 'number') break;
+
+          const existingIndex = highScores.findIndex(h => h.username.toLowerCase() === username.toLowerCase());
+          if (existingIndex !== -1) {
+            if (score > highScores[existingIndex].score) {
+              highScores[existingIndex].score = score;
+              highScores[existingIndex].date = new Date().toISOString();
+            }
+          } else {
+            highScores.push({ username, score, date: new Date().toISOString() });
+          }
+
+          highScores.sort((a, b) => b.score - a.score);
+          highScores = highScores.slice(0, 15);
+
+          try {
+            fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(highScores, null, 2));
+          } catch (err) {
+            console.error('Failed to write leaderboard.json', err);
+          }
+
+          broadcastHighScores();
           break;
         }
 
         case 'UPDATE_SCORE': {
           player.score = data.score !== undefined ? data.score : player.score;
           player.level = data.level !== undefined ? data.level : player.level;
-          broadcastLeaderboard();
           
           // Also sync score inside active room
           if (player.roomId) {

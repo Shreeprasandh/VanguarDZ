@@ -6,16 +6,16 @@
   --text-primary: #f0f3ff;
   --text-secondary: #8a8fa3;
   
-  /* Cyber Colors */
-  --neon-red: #ff3366;
-  --neon-blue: #33ccff;
-  --neon-green: #39ff14;
-  --neon-yellow: #fecb02;
-  --neon-purple: #9d4edd;
+  /* Cyber Colors (Muted & Elegant for Minimal Theme) */
+  --neon-red: #cf4042;
+  --neon-blue: #4a90e2;
+  --neon-green: #2ebd59;
+  --neon-yellow: #d9a752;
+  --neon-purple: #8b5cf6;
   
-  --shadow-red: 0 0 15px rgba(255, 51, 102, 0.4);
-  --shadow-blue: 0 0 15px rgba(51, 204, 255, 0.4);
-  --shadow-green: 0 0 15px rgba(57, 255, 20, 0.4);
+  --shadow-red: 0 0 10px rgba(207, 64, 66, 0.25);
+  --shadow-blue: 0 0 10px rgba(74, 144, 226, 0.25);
+  --shadow-green: 0 0 10px rgba(46, 189, 89, 0.25);
   
   --font-display: 'Orbitron', system-ui, -apple-system, sans-serif;
   --font-body: 'Outfit', system-ui, -apple-system, sans-serif;
