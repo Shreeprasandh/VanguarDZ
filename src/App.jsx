@@ -277,6 +277,8 @@ export default function App() {
             socket={socketRef.current}
             onGameOver={handleGameOver}
             onScoreUpdate={handleScoreUpdate}
+            muted={muted}
+            onToggleMute={toggleMute}
           />
         );
 
@@ -301,48 +303,23 @@ export default function App() {
       {/* Background canvas visuals for main menu */}
       {screen !== 'playing' && <MenuBackground />}
 
-      {/* Global Sound Toggle & Server Status Badge */}
-      <div className="system-actions">
-        <div 
-          style={{
-            fontSize: '0.75rem',
-            background: 'rgba(0,0,0,0.4)',
-            border: '1px solid rgba(255,255,255,0.05)',
-            borderRadius: '12px',
-            padding: '0 0.8rem',
-            height: '42px',
-            display: 'flex',
-            alignItems: 'center',
-            color: socketConnected ? 'var(--neon-green)' : 'var(--neon-red)',
-            fontFamily: 'var(--font-display)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}
-          title={socketConnected ? 'Connected to Multiplayer Server' : 'Connecting to Server...'}
-        >
-          <span style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            background: 'currentColor',
-            marginRight: '6px',
-            animation: socketConnected ? 'none' : 'ping 1s infinite'
-          }} />
-          {socketConnected ? 'Online' : 'Offline'}
+      {/* Global Sound Toggle - Hide during play mode (GameCanvas renders its own grouped controls) */}
+      {screen !== 'playing' && (
+        <div className="system-actions">
+          <button 
+            className="system-btn" 
+            onClick={toggleMute} 
+            title={muted ? 'Unmute Sound' : 'Mute Sound'}
+            style={{ opacity: 0.35 }}
+          >
+            {muted ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/></svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            )}
+          </button>
         </div>
-
-        <button 
-          className="system-btn" 
-          onClick={toggleMute} 
-          title={muted ? 'Unmute Sound' : 'Mute Sound'}
-        >
-          {muted ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/></svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-          )}
-        </button>
-      </div>
+      )}
 
       {/* Primary Displayed Screen */}
       {renderScreen()}

@@ -11,8 +11,17 @@ export default function GameCanvas({
   players,
   socket,
   onGameOver,
-  onScoreUpdate
+  onScoreUpdate,
+  muted,
+  onToggleMute
 }) {
+  const getColorHex = (colorName) => {
+    if (colorName === 'red') return '#ff3366';
+    if (colorName === 'blue') return '#33ccff';
+    if (colorName === 'green') return '#39ff14';
+    if (colorName === 'purple') return '#b432ff';
+    return '#ffffff';
+  };
   const canvasRef = useRef(null);
   
   const isPrime = (num) => {
@@ -179,7 +188,7 @@ export default function GameCanvas({
                 fromY: shipY - 20,
                 toX: data.x,
                 toY: data.y,
-                color: `var(--neon-${mate.color})`,
+                color: getColorHex(mate.color),
                 alpha: 1.0
               });
 
@@ -187,7 +196,7 @@ export default function GameCanvas({
               targetEnemy.targetIndex = data.charIndex + 1;
               
               // Particle burst at impact
-              createExplosion(data.x, data.y, `var(--neon-${mate.color})`, 8);
+              createExplosion(data.x, data.y, getColorHex(mate.color), 8);
 
               // Play strike audio
               GameAudio.play('hit');
@@ -197,13 +206,13 @@ export default function GameCanvas({
                   const nextWord = targetEnemy.wordQueue.shift();
                   targetEnemy.word = nextWord;
                   targetEnemy.targetIndex = 0;
-                  createExplosion(data.x, data.y, `var(--neon-${mate.color})`, 10);
+                  createExplosion(data.x, data.y, getColorHex(mate.color), 10);
                   GameAudio.play('explosionSmall');
                 } else {
                   // Enemy dies
                   state.enemies = state.enemies.filter(e => e.id !== data.wordId);
                   handleEnemyCompletion(data.wordId);
-                  createExplosion(data.x, data.y, `var(--neon-${mate.color})`, 25, true);
+                  createExplosion(data.x, data.y, getColorHex(mate.color), 25, true);
                   GameAudio.play('explosion');
                   
                   // Update teammate's score locally for drawing
@@ -509,12 +518,12 @@ export default function GameCanvas({
       fromY: shipY - 20,
       toX: letterX,
       toY: letterY,
-      color: `var(--neon-${shipColor})`,
+      color: getColorHex(shipColor),
       alpha: 1.0
     });
 
     // Spark particles at impact point
-    createExplosion(letterX, letterY, `var(--neon-${shipColor})`, 8);
+    createExplosion(letterX, letterY, getColorHex(shipColor), 8);
     GameAudio.play('plasma');
 
     // Check if word completed
@@ -530,11 +539,11 @@ export default function GameCanvas({
         enemy.word = nextWord;
         enemy.targetIndex = 0;
         state.activeWordId = null;
-        createExplosion(enemy.x, enemy.y, `var(--neon-${enemy.color})`, 10);
+        createExplosion(enemy.x, enemy.y, getColorHex(enemy.color), 10);
         GameAudio.play('explosionSmall');
       } else {
         state.activeWordId = null;
-        createExplosion(enemy.x, enemy.y, `var(--neon-${enemy.color})`, 22, true);
+        createExplosion(enemy.x, enemy.y, getColorHex(enemy.color), 22, true);
         GameAudio.play('explosion');
         
         // Remove enemy from list
@@ -1107,7 +1116,7 @@ export default function GameCanvas({
       boss.health = Math.round(100 - (completedCount / boss.words.length) * 100);
 
       // Spark massive explosion on the boss itself
-      createExplosion(boss.x, boss.y, `var(--neon-${boss.words[shieldIndex].color})`, 30, true);
+      createExplosion(boss.x, boss.y, getColorHex(boss.words[shieldIndex].color), 30, true);
 
       // Check if all boss words completed
       if (completedCount >= boss.words.length) {
@@ -1303,8 +1312,8 @@ export default function GameCanvas({
       ctx.save();
       ctx.translate(boss.x, boss.y);
       ctx.shadowBlur = 15;
-      ctx.shadowColor = 'var(--neon-purple)';
-      ctx.strokeStyle = 'var(--neon-purple)';
+      ctx.shadowColor = getColorHex('purple');
+      ctx.strokeStyle = getColorHex('purple');
       ctx.lineWidth = 3.0;
 
       // Draw massive procedural boss command fortress
@@ -1339,7 +1348,7 @@ export default function GameCanvas({
       const barH = 6;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
       ctx.fillRect(-barW / 2, -boss.height / 2 - 25, barW, barH);
-      ctx.fillStyle = 'var(--neon-purple)';
+      ctx.fillStyle = getColorHex('purple');
       ctx.fillRect(-barW / 2, -boss.height / 2 - 25, barW * (boss.health / 100), barH);
 
       // Label "BOSS"
@@ -1356,8 +1365,8 @@ export default function GameCanvas({
       ctx.save();
       ctx.translate(enemy.x, enemy.y);
       ctx.shadowBlur = 8;
-      ctx.shadowColor = `var(--neon-${enemy.color})`;
-      ctx.strokeStyle = `var(--neon-${enemy.color})`;
+      ctx.shadowColor = getColorHex(enemy.color);
+      ctx.strokeStyle = getColorHex(enemy.color);
       ctx.lineWidth = 2.5; // Thicker lines for visibility
 
       const seed = parseInt(enemy.id, 36) || 0;
@@ -1468,7 +1477,7 @@ export default function GameCanvas({
       // Draw text word label centered above the ship
       ctx.save();
       const isTargeted = state.activeWordId === enemy.id;
-      ctx.font = isTargeted ? '700 16px Orbitron, sans-serif' : '500 15px Outfit, sans-serif';
+      ctx.font = isTargeted ? '700 21px Consolas, monospace' : '700 19px Consolas, monospace';
       ctx.textAlign = 'center';
 
       const word = enemy.word;
@@ -1476,8 +1485,8 @@ export default function GameCanvas({
 
       // Draw glow behind active letters
       if (isTargeted) {
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = `var(--neon-${enemy.color})`;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = getColorHex(enemy.color);
       }
 
       // Draw typed letters (dim/gray or glowing) and untyped letters
@@ -1492,9 +1501,9 @@ export default function GameCanvas({
         const hasTyped = i < progressIndex;
 
         if (hasTyped) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.25)'; // Typed letters dimmed
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'; // Typed letters dimmed
         } else {
-          ctx.fillStyle = `var(--neon-${enemy.color})`; // Target color for active letters
+          ctx.fillStyle = getColorHex(enemy.color); // Target color for active letters
         }
         
         const letterPosX = currentX + ctx.measureText(char).width / 2;
@@ -1552,8 +1561,8 @@ export default function GameCanvas({
       ctx.save();
       ctx.translate(x, y);
       ctx.shadowBlur = 10;
-      ctx.shadowColor = `var(--neon-${color})`;
-      ctx.strokeStyle = `var(--neon-${color})`;
+      ctx.shadowColor = getColorHex(color);
+      ctx.strokeStyle = getColorHex(color);
       ctx.lineWidth = 2.5;
 
       // Draw procedural player design based on color - Modern Spacecraft
@@ -1637,7 +1646,7 @@ export default function GameCanvas({
       ctx.font = '900 3rem Orbitron, sans-serif';
       ctx.fillText(`WAVE ${state.wave}`, canvas.width / 2, canvas.height * 0.46);
 
-      ctx.fillStyle = 'var(--neon-blue)';
+      ctx.fillStyle = getColorHex('blue');
       ctx.font = '400 1rem Outfit, sans-serif';
       ctx.fillText('INCOMING HOSTILE ATTACKS - PREPARE KEYBOARD', canvas.width / 2, canvas.height * 0.54);
 
@@ -1655,7 +1664,7 @@ export default function GameCanvas({
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       
-      ctx.fillStyle = 'var(--neon-red)';
+      ctx.fillStyle = getColorHex('red');
       ctx.font = '900 3.2rem Orbitron, sans-serif';
       ctx.fillText(`WARNING`, canvas.width / 2, canvas.height * 0.45);
       
@@ -1730,14 +1739,49 @@ export default function GameCanvas({
         onKeyDown={handleKeyDown}
       />
       
+      {/* Sound Button */}
+      <button
+        style={{
+          position: 'absolute',
+          top: '1.5rem',
+          right: '9.5rem',
+          background: 'rgba(12, 12, 28, 0.8)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          color: '#ffffff',
+          width: '38px',
+          height: '38px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          pointerEvents: 'auto',
+          zIndex: 100,
+          opacity: 0.85,
+          outline: 'none'
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleMute();
+        }}
+        title={muted ? 'Unmute Sound' : 'Mute Sound'}
+      >
+        {muted ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/></svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        )}
+      </button>
+
       {/* Pause Button */}
       <button
         style={{
           position: 'absolute',
           top: '1.5rem',
-          right: '8.5rem',
+          right: '6.5rem',
           background: 'rgba(12, 12, 28, 0.8)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
           color: '#ffffff',
           width: '38px',
           height: '38px',
@@ -1751,6 +1795,7 @@ export default function GameCanvas({
           zIndex: 100,
           fontFamily: 'var(--font-display)',
           fontSize: '0.9rem',
+          opacity: 0.85,
           outline: 'none'
         }}
         onClick={(e) => {

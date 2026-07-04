@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from 'react';
 export default function MenuBackground() {
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: -1000, y: -1000, active: false });
+  const trailHistory = useRef([]); // Stores last mouse positions
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -21,9 +22,14 @@ export default function MenuBackground() {
       mouseRef.current.y = e.clientY;
       mouseRef.current.active = true;
       
-      // Spawn trail particles on move
-      if (Math.random() < 0.4) {
-        spawnTrail(e.clientX, e.clientY);
+      // Save trail history
+      trailHistory.current.push({
+        x: e.clientX,
+        y: e.clientY,
+        life: 1.0 // opacity factor
+      });
+      if (trailHistory.current.length > 25) {
+        trailHistory.current.shift();
       }
     };
 
@@ -41,34 +47,15 @@ export default function MenuBackground() {
       nodes.push({
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
-        size: 1.0 + Math.random() * 2.0,
-        vx: (Math.random() - 0.5) * 0.25,
-        vy: (Math.random() - 0.5) * 0.25,
-        baseAlpha: 0.1 + Math.random() * 0.35,
+        size: 1.0 + Math.random() * 1.5,
+        vx: (Math.random() - 0.5) * 0.2,
+        vy: (Math.random() - 0.5) * 0.2,
+        baseAlpha: 0.08 + Math.random() * 0.25,
         alpha: 0,
-        twinkleSpeed: 0.005 + Math.random() * 0.015,
+        twinkleSpeed: 0.005 + Math.random() * 0.012,
         phase: Math.random() * Math.PI * 2
       });
     }
-
-    // Interactive mouse trail particles
-    let trails = [];
-    const spawnTrail = (x, y) => {
-      for (let i = 0; i < 2; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 0.2 + Math.random() * 1.2;
-        trails.push({
-          x,
-          y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          size: 1 + Math.random() * 3,
-          color: `hsla(${190 + Math.random() * 60}, 85%, 65%, 0.7)`,
-          alpha: 1.0,
-          decay: 0.02 + Math.random() * 0.02
-        });
-      }
-    };
 
     // Grid warping calculations
     const getWarpedPoint = (x, y, mx, my, mActive) => {
@@ -79,9 +66,7 @@ export default function MenuBackground() {
       const warpRadius = 220;
       
       if (dist < warpRadius) {
-        // Warp factor: shift points gently towards or away from the cursor
-        // (Warping away creates a nice repulsion lens effect)
-        const force = Math.pow((warpRadius - dist) / warpRadius, 2) * 22;
+        const force = Math.pow((warpRadius - dist) / warpRadius, 2) * 18;
         const angle = Math.atan2(dy, dx);
         return {
           x: x + Math.cos(angle) * force,
@@ -99,8 +84,8 @@ export default function MenuBackground() {
 
       const mouse = mouseRef.current;
 
-      // Draw Warped Minimal Grid (4% transparency)
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+      // Draw Warped Minimal Grid (2% transparency)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.015)';
       ctx.lineWidth = 0.8;
       const gridSize = 100;
       
@@ -138,7 +123,7 @@ export default function MenuBackground() {
         if (node.y > canvas.height) node.y = 0;
 
         node.phase += node.twinkleSpeed;
-        node.alpha = node.baseAlpha + Math.sin(node.phase) * 0.15;
+        node.alpha = node.baseAlpha + Math.sin(node.phase) * 0.1;
 
         // Draw connections to nearby nodes
         for (let j = idx + 1; j < nodes.length; j++) {
@@ -148,7 +133,7 @@ export default function MenuBackground() {
           const dist = Math.sqrt(dx * dx + dy * dy);
           
           if (dist < 130) {
-            const connAlpha = (1 - dist / 130) * 0.05;
+            const connAlpha = (1 - dist / 130) * 0.04;
             ctx.strokeStyle = `rgba(255, 255, 255, ${connAlpha})`;
             ctx.lineWidth = 0.5;
             ctx.beginPath();
@@ -158,13 +143,13 @@ export default function MenuBackground() {
           }
         }
 
-        // Draw connections to mouse cursor
+        // Draw connections to mouse cursor (very low transparency)
         if (mouse.active) {
           const dx = node.x - mouse.x;
           const dy = node.y - mouse.y;
           const mDist = Math.sqrt(dx * dx + dy * dy);
           if (mDist < 180) {
-            const mConnAlpha = (1 - mDist / 180) * 0.07;
+            const mConnAlpha = (1 - mDist / 180) * 0.04;
             ctx.strokeStyle = `rgba(51, 204, 255, ${mConnAlpha})`;
             ctx.lineWidth = 0.6;
             ctx.beginPath();
@@ -181,23 +166,24 @@ export default function MenuBackground() {
         ctx.fill();
       });
 
-      // Update and Draw interactive mouse trail particles
-      trails.forEach((trail, idx) => {
-        trail.x += trail.vx;
-        trail.y += trail.vy;
-        trail.alpha -= trail.decay;
-
-        if (trail.alpha <= 0) return;
-
-        ctx.save();
-        ctx.globalAlpha = trail.alpha;
-        ctx.fillStyle = trail.color;
+      // Update and Draw vector ribbon mouse trail (extremely low transparency 4%)
+      const history = trailHistory.current;
+      if (history.length > 1) {
         ctx.beginPath();
-        ctx.arc(trail.x, trail.y, trail.size, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        ctx.moveTo(history[0].x, history[0].y);
+        for (let i = 1; i < history.length; i++) {
+          ctx.lineTo(history[i].x, history[i].y);
+        }
+        ctx.strokeStyle = 'rgba(51, 204, 255, 0.04)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      // Decay ribbon trail particles
+      history.forEach(pt => {
+        pt.life -= 0.04;
       });
-      trails = trails.filter(t => t.alpha > 0);
+      trailHistory.current = history.filter(pt => pt.life > 0);
 
       animId = requestAnimationFrame(render);
     };
