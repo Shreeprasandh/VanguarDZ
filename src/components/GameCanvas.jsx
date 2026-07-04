@@ -13,13 +13,19 @@ export default function GameCanvas({
   onGameOver,
   onScoreUpdate,
   muted,
-  onToggleMute
+  onToggleMute,
+  onQuitToMenu
 }) {
   const getColorHex = (colorName) => {
-    if (colorName === 'red') return '#ff3366';
-    if (colorName === 'blue') return '#33ccff';
-    if (colorName === 'green') return '#39ff14';
-    if (colorName === 'purple') return '#b432ff';
+    if (colorName === 'red') return '#cf4042'; // Muted Crimson
+    if (colorName === 'blue') return '#4a90e2'; // Sleek Slate Blue
+    if (colorName === 'green') return '#2ebd59'; // Sage Emerald
+    if (colorName === 'purple') return '#8b5cf6'; // Indigo/Lavender
+    
+    if (colorName === 'orange') return '#d97706'; // Muted Bronze Orange
+    if (colorName === 'magenta') return '#be185d'; // Deep Wine Rose
+    if (colorName === 'gold') return '#d9a752'; // Matte Gold
+    
     return '#ffffff';
   };
   const canvasRef = useRef(null);
@@ -1326,30 +1332,42 @@ export default function GameCanvas({
 
       // Draw massive procedural boss command fortress
       ctx.beginPath();
-      ctx.moveTo(-boss.width / 2, -boss.height / 2);
-      ctx.lineTo(boss.width / 2, -boss.height / 2);
-      ctx.lineTo(boss.width * 0.45, boss.height * 0.2);
+      ctx.moveTo(-boss.width / 2, -boss.height / 3);
+      ctx.lineTo(-boss.width * 0.3, -boss.height / 2);
+      ctx.lineTo(boss.width * 0.3, -boss.height / 2);
+      ctx.lineTo(boss.width / 2, -boss.height / 3);
+      ctx.lineTo(boss.width * 0.45, boss.height * 0.25);
       ctx.lineTo(boss.width * 0.25, boss.height * 0.5);
       ctx.lineTo(boss.width * 0.1, boss.height * 0.35);
       ctx.lineTo(-boss.width * 0.1, boss.height * 0.35);
       ctx.lineTo(-boss.width * 0.25, boss.height * 0.5);
-      ctx.lineTo(-boss.width * 0.45, boss.height * 0.2);
+      ctx.lineTo(-boss.width * 0.45, boss.height * 0.25);
       ctx.closePath();
       
       // Semitransparent fill for mass and visibility
-      ctx.fillStyle = 'rgba(180, 50, 255, 0.1)';
+      ctx.fillStyle = 'rgba(139, 92, 246, 0.08)';
       ctx.fill();
       ctx.stroke();
 
-      // Draw secondary weapon pods/structures inside the silhouette
+      // Draw secondary layered plate armor contours and panels (detailed!)
+      ctx.strokeStyle = 'rgba(139, 92, 246, 0.35)';
+      ctx.lineWidth = 1.0;
       ctx.beginPath();
-      ctx.moveTo(-boss.width * 0.35, -boss.height * 0.25);
-      ctx.lineTo(-boss.width * 0.2, -boss.height * 0.25);
-      ctx.lineTo(-boss.width * 0.2, boss.height * 0.1);
-      ctx.moveTo(boss.width * 0.35, -boss.height * 0.25);
-      ctx.lineTo(boss.width * 0.2, -boss.height * 0.25);
-      ctx.lineTo(boss.width * 0.2, boss.height * 0.1);
+      // Outer armor plate left
+      ctx.moveTo(-boss.width * 0.4, -boss.height * 0.1);
+      ctx.lineTo(-boss.width * 0.4, boss.height * 0.15);
+      ctx.lineTo(-boss.width * 0.25, boss.height * 0.35);
+      // Outer armor plate right
+      ctx.moveTo(boss.width * 0.4, -boss.height * 0.1);
+      ctx.lineTo(boss.width * 0.4, boss.height * 0.15);
+      ctx.lineTo(boss.width * 0.25, boss.height * 0.35);
+      // Center command deck tower
+      ctx.rect(-boss.width * 0.15, -boss.height * 0.35, boss.width * 0.3, boss.height * 0.15);
       ctx.stroke();
+
+      // Command bridge glowing console window
+      ctx.fillStyle = '#cf4042';
+      ctx.fillRect(-boss.width * 0.08, -boss.height * 0.3, boss.width * 0.16, 2);
 
       // Draw boss health bar
       const barW = 200;
@@ -1412,6 +1430,17 @@ export default function GameCanvas({
           ctx.lineTo(0, 32);
         }
         ctx.stroke();
+
+        // Internal wing panel lines
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.moveTo(-10, -3); ctx.lineTo(-4, -8);
+        ctx.moveTo(10, -3); ctx.lineTo(4, -8);
+        ctx.moveTo(0, 24); ctx.lineTo(0, 0);
+        ctx.stroke();
+        ctx.restore();
       } else if (enemy.type === 'cruiser') {
         // Hexagonal armored gunship cruiser (General - 30 variants)
         ctx.moveTo(0, 32);
@@ -1444,6 +1473,17 @@ export default function GameCanvas({
           ctx.arc(0, -6, 12, 0, Math.PI * 2);
         }
         ctx.stroke();
+
+        // Internal heavy chassis plate lines
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.moveTo(-22, 12); ctx.lineTo(-8, -16);
+        ctx.moveTo(22, 12); ctx.lineTo(8, -16);
+        ctx.rect(-6, -6, 12, 12);
+        ctx.stroke();
+        ctx.restore();
       } else {
         // Drones - styled like a solar probe droid (Common - 50 variants)
         ctx.moveTo(0, 16);
@@ -1470,6 +1510,16 @@ export default function GameCanvas({
           ctx.arc(0, 0, 3, 0, Math.PI * 2);
         }
         ctx.stroke();
+
+        // Internal circuit core lines
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.arc(0, 0, 4, 0, Math.PI * 2);
+        ctx.moveTo(0, -10); ctx.lineTo(0, 10);
+        ctx.stroke();
+        ctx.restore();
       }
       
       // Translucent solid fill so they are highly visible
@@ -1576,23 +1626,53 @@ export default function GameCanvas({
       // Draw procedural player design based on color - Modern Spacecraft
       ctx.beginPath();
       ctx.moveTo(0, -22); // Cockpit nose tip
-      ctx.lineTo(6, -6);
-      ctx.lineTo(20, 10); // swept right wing
-      ctx.lineTo(7, 5);
-      ctx.lineTo(5, 12); // right engine nozzle
-      ctx.lineTo(0, 6); // core base
-      ctx.lineTo(-5, 12); // left engine nozzle
-      ctx.lineTo(-7, 5);
-      ctx.lineTo(-20, 10); // swept left wing
-      ctx.lineTo(-6, -6);
+      ctx.lineTo(5, -8);
+      ctx.lineTo(20, 8); // swept right wing
+      ctx.lineTo(8, 4);
+      ctx.lineTo(6, 12); // right engine nozzle
+      ctx.lineTo(3, 8);
+      ctx.lineTo(-3, 8);
+      ctx.lineTo(-6, 12); // left engine nozzle
+      ctx.lineTo(-8, 4);
+      ctx.lineTo(-20, 8); // swept left wing
+      ctx.lineTo(-5, -8);
       ctx.closePath();
       ctx.stroke();
 
-      // Glowing Cockpit Glass
-      ctx.fillStyle = 'rgba(51, 204, 255, 0.4)';
+      // Secondary detailed wing panel stripes
+      ctx.save();
+      const resolvedColor = getColorHex(color);
+      ctx.strokeStyle = resolvedColor;
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = 1.0;
       ctx.beginPath();
-      ctx.arc(0, -5, 4, 0, Math.PI * 2);
+      // Left wing panels
+      ctx.moveTo(-5, -8);
+      ctx.lineTo(-14, 4);
+      ctx.lineTo(-8, 3);
+      // Right wing panels
+      ctx.moveTo(5, -8);
+      ctx.lineTo(14, 4);
+      ctx.lineTo(8, 3);
+      // Center hull spine
+      ctx.moveTo(0, -18);
+      ctx.lineTo(0, 5);
+      ctx.stroke();
+      ctx.restore();
+
+      // Glowing Cockpit Glass
+      ctx.fillStyle = 'rgba(74, 144, 226, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(0, -4, 3, 5, 0, 0, Math.PI * 2);
       ctx.fill();
+
+      // Side Laser Cannons
+      ctx.strokeStyle = resolvedColor;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-10, 0); ctx.lineTo(-10, -6);
+      ctx.moveTo(10, 0); ctx.lineTo(10, -6);
+      ctx.stroke();
 
       // Draw thruster fire particles procedurally
       ctx.fillStyle = `rgba(${color === 'red' ? '255, 51, 102' : color === 'blue' ? '51, 204, 255' : '57, 255, 20'}, 0.3)`;
@@ -1689,27 +1769,7 @@ export default function GameCanvas({
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Draw Pause Overlay in center
-    if (state.isPaused) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      // PAUSED Text
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 3.5rem Orbitron, sans-serif';
-      ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
-
-      // Subtitle
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.font = '500 0.95rem Outfit, sans-serif';
-      ctx.fillText('CLICK THE PLAY BUTTON IN THE TOP RIGHT TO RESUME', canvas.width / 2, canvas.height / 2 + 55);
-
-      ctx.restore();
-    }
 
     ctx.restore(); // Pop Screen Shake
   };
@@ -1723,6 +1783,7 @@ export default function GameCanvas({
   };
 
   const [paused, setPaused] = useState(false);
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
 
   // Sync React state back to stateRef
   useEffect(() => {
@@ -1755,6 +1816,132 @@ export default function GameCanvas({
         tabIndex="0"
         onKeyDown={handleKeyDown}
       />
+
+      {/* Pause Menu Overlay in HTML/React when paused */}
+      {paused && (
+        <div 
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0, 0, 0, 0.75)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 90,
+            pointerEvents: 'auto'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '3rem', fontWeight: 900, color: '#ffffff', letterSpacing: '8px', marginBottom: '1.2rem' }}>
+            PAUSED
+          </div>
+          <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.95rem', color: 'rgba(255, 255, 255, 0.4)', letterSpacing: '1px', marginBottom: '3.5rem' }}>
+            Click the play button in the top right or press Esc to resume
+          </div>
+          
+          <button
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: 'rgba(255, 255, 255, 0.5)',
+              padding: '0.8rem 2.5rem',
+              fontSize: '0.85rem',
+              fontFamily: 'var(--font-display)',
+              letterSpacing: '2.5px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              borderRadius: '2px',
+              outline: 'none'
+            }}
+            onClick={() => {
+              GameAudio.play('click');
+              setShowQuitConfirm(true);
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = 'var(--neon-red)';
+              e.target.style.color = 'var(--neon-red)';
+              e.target.style.background = 'rgba(207, 64, 66, 0.02)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+              e.target.style.color = 'rgba(255, 255, 255, 0.5)';
+              e.target.style.background = 'transparent';
+            }}
+          >
+            Quit to Menu
+          </button>
+        </div>
+      )}
+
+      {/* Themed Custom React Warning PopUp for Abandoning Mission */}
+      {showQuitConfirm && (
+        <div className="modal-overlay" style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(10px)', zIndex: 2000 }}>
+          <div 
+            style={{ 
+              maxWidth: '440px',
+              width: '100%',
+              background: 'rgba(6, 6, 10, 0.98)',
+              border: '1px solid var(--neon-red)',
+              boxShadow: '0 20px 50px rgba(0, 0, 0, 0.9)',
+              padding: '3.5rem 3rem',
+              borderRadius: '2px',
+              textAlign: 'center',
+              animation: 'fadeIn 0.3s ease-out'
+            }}
+          >
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--neon-red)', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
+              ABANDON MISSION
+            </div>
+            
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.95rem', lineHeight: '1.7', color: '#dcdfe8', marginBottom: '3rem', fontWeight: 300, textAlign: 'justify' }}>
+              Are you sure you want to abort the current wave deployment and return to command? Unsaved score progress will be terminated.
+            </p>
+            
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button 
+                className="btn" 
+                style={{ 
+                  flex: 1, 
+                  background: 'transparent', 
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  color: '#ffffff',
+                  borderRadius: '2px',
+                  letterSpacing: '1.5px',
+                  fontSize: '0.85rem'
+                }}
+                onClick={() => { GameAudio.play('click'); setShowQuitConfirm(false); }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary" 
+                style={{ 
+                  flex: 1, 
+                  background: 'transparent', 
+                  border: '1px solid var(--neon-red)',
+                  color: 'var(--neon-red)',
+                  borderRadius: '2px',
+                  letterSpacing: '2.5px',
+                  fontSize: '0.85rem'
+                }}
+                onClick={() => { 
+                  GameAudio.play('click'); 
+                  setShowQuitConfirm(false);
+                  setPaused(false);
+                  onQuitToMenu(); 
+                }}
+              >
+                Abort
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Sound Button */}
       <button

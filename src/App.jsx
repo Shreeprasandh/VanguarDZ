@@ -288,6 +288,7 @@ export default function App() {
             onScoreUpdate={handleScoreUpdate}
             muted={muted}
             onToggleMute={toggleMute}
+            onQuitToMenu={handleReturnMenu}
           />
         );
 
