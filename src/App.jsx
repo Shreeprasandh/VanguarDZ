@@ -7,6 +7,7 @@ import GameCanvas from './components/GameCanvas';
 import GameOver from './components/GameOver';
 import { GameAudio } from './game/audio';
 import MenuBackground from './components/MenuBackground';
+import StoryModal from './components/StoryModal';
 
 export default function App() {
   // Profile settings (persisted in localStorage)
@@ -21,6 +22,7 @@ export default function App() {
   const [screen, setScreen] = useState('menu'); // 'menu', 'lobby', 'playing', 'gameover'
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showStory, setShowStory] = useState(false);
   const [muted, setMuted] = useState(false);
 
   // Multiplayer room state
@@ -243,6 +245,7 @@ export default function App() {
             onJoinRoom={handleJoinRoom}
             onOpenLeaderboard={() => setShowLeaderboard(true)}
             onOpenEditProfile={() => setShowEditProfile(true)}
+            onOpenStory={() => setShowStory(true)}
           />
         );
 
@@ -359,6 +362,13 @@ export default function App() {
         <Leaderboard
           leaderboard={leaderboard}
           onClose={() => setShowLeaderboard(false)}
+        />
+      )}
+
+      {/* Story book overlay */}
+      {showStory && (
+        <StoryModal
+          onClose={() => setShowStory(false)}
         />
       )}
     </div>

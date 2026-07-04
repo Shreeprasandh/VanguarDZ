@@ -8,7 +8,8 @@ export default function MainMenu({
   onCreateRoom,
   onJoinRoom,
   onOpenLeaderboard,
-  onOpenEditProfile
+  onOpenEditProfile,
+  onOpenStory
 }) {
   const [showTeamOptions, setShowTeamOptions] = useState(false);
   const [roomCodeInput, setRoomCodeInput] = useState('');
@@ -327,6 +328,32 @@ export default function MainMenu({
           </div>
         </div>
       )}
+      
+      {/* Story Link on Bottom Left (fixed position) */}
+      <button 
+        className="leaderboard-link"
+        style={{
+          position: 'fixed',
+          bottom: '1.5rem',
+          left: '1.5rem',
+          marginTop: 0,
+          opacity: 0.35,
+          background: 'transparent',
+          border: 'none',
+          color: 'var(--text-secondary)',
+          fontFamily: 'var(--font-display)',
+          fontSize: '0.8rem',
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          outline: 'none',
+          zIndex: 20
+        }}
+        onClick={() => { handleButtonClick(); onOpenStory(); }}
+      >
+        // Story
+      </button>
     </div>
   );
 }

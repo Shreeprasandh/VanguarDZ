@@ -46,7 +46,8 @@ export default function GameCanvas({
     waveSpawnedCount: 0,
     waveTotalToSpawn: 10,
     isLocalGameOver: false,
-    teammates: []
+    teammates: [],
+    isPaused: false
   });
 
   const [hudState, setHudState] = useState({
@@ -69,7 +70,7 @@ export default function GameCanvas({
       
       // Initialize scenery if empty
       if (stateRef.current.scenery.length === 0) {
-        initScenery(canvas.width, canvas.height);
+        initScenery(canvas.width, canvas.height, stateRef.current.wave);
       }
     };
     
@@ -82,7 +83,9 @@ export default function GameCanvas({
     // Start Game loop
     let animationFrameId;
     const render = () => {
-      updateGame();
+      if (!stateRef.current.isPaused) {
+        updateGame();
+      }
       drawGame();
       animationFrameId = requestAnimationFrame(render);
     };
@@ -295,25 +298,62 @@ export default function GameCanvas({
   }, [isMultiplayer, socket]);
 
   // Initial scenery population
-  const initScenery = (width, height) => {
+  const initScenery = (width, height, waveNumber = 1) => {
     const scenery = [];
-    const count = 25;
+    const count = 22 + Math.min(waveNumber, 10);
     
+    const isBossWave = isPrime(waveNumber);
+    const isOdd = waveNumber % 2 !== 0;
+
     for (let i = 0; i < count; i++) {
-      // Left side (0% to 20%) or Right side (80% to 100%)
       const isLeft = Math.random() < 0.5;
       const x = isLeft 
         ? Math.random() * (width * 0.18) 
         : width - Math.random() * (width * 0.18);
       const y = Math.random() * height;
-      const size = 15 + Math.random() * 40;
-      const type = Math.random() < 0.3 ? 'tower' : Math.random() < 0.7 ? 'asteroid' : 'planet';
-      const speedMultiplier = 0.2 + Math.random() * 0.4;
+      const size = 20 + Math.random() * 40;
+      const speedMultiplier = 0.15 + Math.random() * 0.3;
       const rotation = Math.random() * Math.PI * 2;
-      const rotationSpeed = (Math.random() - 0.5) * 0.01;
-      const color = `hsla(${200 + Math.random() * 80}, 30%, 40%, 0.15)`;
+      const rotationSpeed = (Math.random() - 0.5) * 0.008;
 
-      scenery.push({ x, y, size, type, speedMultiplier, rotation, rotationSpeed, color });
+      let type;
+      let color;
+      
+      if (isBossWave) {
+        // Battle remnants: wreckage and platforms
+        type = Math.random() < 0.55 ? 'wreckage' : 'platform';
+        color = `hsla(0, 50%, 50%, ${0.05 + Math.random() * 0.06})`; // faint glowing red/rust
+      } else if (isOdd) {
+        // Asteroid belt: bumpy rocks
+        type = Math.random() < 0.7 ? 'asteroid' : 'rock';
+        color = `hsla(210, 10%, 60%, ${0.07 + Math.random() * 0.08})`; // grayish rock
+      } else {
+        // Star systems & distant planets
+        type = Math.random() < 0.5 ? 'planet' : 'solarsystem';
+        color = `hsla(${180 + Math.random() * 60}, 50%, 60%, ${0.02 + Math.random() * 0.035})`; // extremely low transparency
+      }
+
+      // Pre-calculated points for rocks/asteroids to prevent drawing jitter
+      const offsets = [];
+      const ptsCount = type === 'asteroid' ? 10 : 6;
+      for (let j = 0; j < ptsCount; j++) {
+        offsets.push(0.8 + Math.random() * 0.4);
+      }
+
+      const hasRing = Math.random() < 0.5;
+
+      scenery.push({
+        x,
+        y,
+        size,
+        type,
+        speedMultiplier,
+        rotation,
+        rotationSpeed,
+        color,
+        offsets,
+        hasRing
+      });
     }
     stateRef.current.scenery = scenery;
   };
@@ -348,7 +388,7 @@ export default function GameCanvas({
   // Keyboard Event Handlers
   const handleKeyDown = (e) => {
     const state = stateRef.current;
-    if (state.isLocalGameOver) return;
+    if (state.isLocalGameOver || state.isPaused) return;
 
     const key = e.key;
     if (key.length !== 1) return; // Ignore modifier keys (Shift, Ctrl, etc.)
@@ -587,9 +627,10 @@ export default function GameCanvas({
     
     if (isHost && state.waveState === 'playing') {
       const now = Date.now();
-      const spawnInterval = Math.max(1200, 3200 - state.wave * 150); // Spawning speed scales up
+      const spawnInterval = state.wave >= 100 ? 100 : Math.max(1200, 3200 - state.wave * 150); // Spawning speed scales up
+      const totalToSpawn = state.wave >= 100 ? 999999 : state.waveTotalToSpawn;
       
-      if (now - state.lastSpawnTime > spawnInterval && state.waveSpawnedCount < state.waveTotalToSpawn) {
+      if (now - state.lastSpawnTime > spawnInterval && state.waveSpawnedCount < totalToSpawn) {
         spawnNewEnemyWave();
         state.lastSpawnTime = now;
       }
@@ -624,7 +665,7 @@ export default function GameCanvas({
     }
 
     // Enemies movement
-    const baseSpeedMultiplier = 1.0 + (state.wave * 0.08); // Speed scales up with waves
+    const baseSpeedMultiplier = state.wave >= 100 ? 8.5 : (1.0 + (state.wave * 0.08)); // Speed scales up with waves
     const multiplayerDifficulty = isMultiplayer ? 1.25 : 1.0; // 25% harder as requested
     
     state.enemies.forEach(enemy => {
@@ -640,7 +681,7 @@ export default function GameCanvas({
         enemy.shootCooldown = (enemy.shootCooldown || 180) - 1;
         if (enemy.shootCooldown <= 0) {
           fireGeneralBullet(enemy);
-          enemy.shootCooldown = 180 + Math.random() * 120;
+          enemy.shootCooldown = state.wave >= 100 ? 15 : (180 + Math.random() * 120); // Unbeatable bullet storm
         }
       }
 
@@ -699,6 +740,11 @@ export default function GameCanvas({
         type = 'cruiser'; // General
         speed = 0.3 + Math.random() * 0.2;
         hp = 2;
+      }
+
+      if (state.wave >= 100) {
+        hp = 999; // Mathematical impossibility
+        speed = 2.5 + Math.random() * 1.5;
       }
 
       const word = getWordForEnemy(type, state.wave);
@@ -1136,21 +1182,20 @@ export default function GameCanvas({
       ctx.stroke();
     }
 
-    // Draw Parallax Scenery (broken towers, asteroids, planets on margins)
+    // Draw Parallax Scenery (wreckage, platforms, asteroids, planets on margins)
     state.scenery.forEach(item => {
       ctx.save();
       ctx.translate(item.x, item.y);
       ctx.rotate(item.rotation);
       ctx.strokeStyle = item.color;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.2;
 
-      if (item.type === 'asteroid') {
-        // Draw irregular polygon
+      if (item.type === 'asteroid' || item.type === 'rock') {
         ctx.beginPath();
-        const pts = 8;
+        const pts = item.offsets.length;
         for (let j = 0; j < pts; j++) {
           const angle = (j / pts) * Math.PI * 2;
-          const r = item.size * (0.8 + Math.random() * 0.3);
+          const r = item.size * item.offsets[j];
           const px = Math.cos(angle) * r;
           const py = Math.sin(angle) * r;
           if (j === 0) ctx.moveTo(px, py);
@@ -1158,25 +1203,68 @@ export default function GameCanvas({
         }
         ctx.closePath();
         ctx.stroke();
-      } else if (item.type === 'tower') {
-        // Draw broken girder space-tower outline
+        
+        // Internal crater circles for asteroid realism
+        if (item.type === 'asteroid') {
+          ctx.beginPath();
+          ctx.arc(-item.size * 0.2, -item.size * 0.1, item.size * 0.15, 0, Math.PI * 2);
+          ctx.arc(item.size * 0.2, item.size * 0.2, item.size * 0.1, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else if (item.type === 'platform') {
+        // Detailed space platform girder structure
         ctx.beginPath();
-        const halfSize = item.size / 2;
-        ctx.rect(-halfSize, -item.size, item.size, item.size * 2);
-        // Draw crossed bracing girders
-        ctx.moveTo(-halfSize, -item.size);
-        ctx.lineTo(halfSize, item.size * 1);
-        ctx.moveTo(halfSize, -item.size);
-        ctx.lineTo(-halfSize, item.size * 1);
+        ctx.rect(-item.size * 0.7, -item.size * 0.15, item.size * 1.4, item.size * 0.3);
+        ctx.stroke();
+        // Cross struts
+        ctx.beginPath();
+        for (let sx = -item.size * 0.5; sx < item.size * 0.5; sx += item.size * 0.4) {
+          ctx.moveTo(sx, -item.size * 0.15);
+          ctx.lineTo(sx + item.size * 0.3, item.size * 0.15);
+          ctx.moveTo(sx + item.size * 0.3, -item.size * 0.15);
+          ctx.lineTo(sx, item.size * 0.15);
+        }
+        ctx.stroke();
+      } else if (item.type === 'wreckage') {
+        // Fractured ship debris silhouette
+        ctx.beginPath();
+        ctx.moveTo(-item.size * 0.6, -item.size * 0.3);
+        ctx.lineTo(item.size * 0.6, -item.size * 0.1);
+        ctx.lineTo(item.size * 0.3, item.size * 0.4);
+        ctx.lineTo(-item.size * 0.4, item.size * 0.3);
+        ctx.closePath();
+        ctx.stroke();
+        // Exposed ship beams
+        ctx.beginPath();
+        ctx.moveTo(-item.size * 0.2, -item.size * 0.25);
+        ctx.lineTo(-item.size * 0.1, item.size * 0.32);
+        ctx.moveTo(item.size * 0.1, -item.size * 0.2);
+        ctx.lineTo(item.size * 0.15, item.size * 0.35);
         ctx.stroke();
       } else if (item.type === 'planet') {
-        // Draw wireframe planet sphere
+        // Elegant celestial planet outline
         ctx.beginPath();
-        ctx.arc(0, 0, item.size, 0, Math.PI * 2);
+        ctx.arc(0, 0, item.size * 0.8, 0, Math.PI * 2);
         ctx.stroke();
-        // Draw equator orbit line
+        if (item.hasRing) {
+          ctx.beginPath();
+          ctx.ellipse(0, 0, item.size * 1.3, item.size * 0.3, Math.PI / 6, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else if (item.type === 'solarsystem') {
+        // Star with orbiting planet
         ctx.beginPath();
-        ctx.ellipse(0, 0, item.size * 1.4, item.size * 0.3, Math.PI / 8, 0, Math.PI * 2);
+        ctx.arc(0, 0, item.size * 0.25, 0, Math.PI * 2); // central star
+        ctx.stroke();
+        // Orbit ellipse
+        ctx.beginPath();
+        ctx.ellipse(0, 0, item.size * 0.9, item.size * 0.35, Math.PI / 4, 0, Math.PI * 2);
+        ctx.stroke();
+        // Orbiting planet sphere
+        const planetX = Math.cos(Date.now() * 0.0006 + item.size) * item.size * 0.9;
+        const planetY = Math.sin(Date.now() * 0.0006 + item.size) * item.size * 0.35;
+        ctx.beginPath();
+        ctx.arc(planetX, planetY, item.size * 0.08, 0, Math.PI * 2);
         ctx.stroke();
       }
       ctx.restore();
@@ -1223,11 +1311,27 @@ export default function GameCanvas({
       ctx.beginPath();
       ctx.moveTo(-boss.width / 2, -boss.height / 2);
       ctx.lineTo(boss.width / 2, -boss.height / 2);
-      ctx.lineTo(boss.width * 0.4, boss.height / 2);
-      ctx.lineTo(boss.width * 0.15, boss.height * 0.3);
-      ctx.lineTo(-boss.width * 0.15, boss.height * 0.3);
-      ctx.lineTo(-boss.width * 0.4, boss.height / 2);
+      ctx.lineTo(boss.width * 0.45, boss.height * 0.2);
+      ctx.lineTo(boss.width * 0.25, boss.height * 0.5);
+      ctx.lineTo(boss.width * 0.1, boss.height * 0.35);
+      ctx.lineTo(-boss.width * 0.1, boss.height * 0.35);
+      ctx.lineTo(-boss.width * 0.25, boss.height * 0.5);
+      ctx.lineTo(-boss.width * 0.45, boss.height * 0.2);
       ctx.closePath();
+      
+      // Semitransparent fill for mass and visibility
+      ctx.fillStyle = 'rgba(180, 50, 255, 0.1)';
+      ctx.fill();
+      ctx.stroke();
+
+      // Draw secondary weapon pods/structures inside the silhouette
+      ctx.beginPath();
+      ctx.moveTo(-boss.width * 0.35, -boss.height * 0.25);
+      ctx.lineTo(-boss.width * 0.2, -boss.height * 0.25);
+      ctx.lineTo(-boss.width * 0.2, boss.height * 0.1);
+      ctx.moveTo(boss.width * 0.35, -boss.height * 0.25);
+      ctx.lineTo(boss.width * 0.2, -boss.height * 0.25);
+      ctx.lineTo(boss.width * 0.2, boss.height * 0.1);
       ctx.stroke();
 
       // Draw boss health bar
@@ -1256,30 +1360,100 @@ export default function GameCanvas({
       ctx.strokeStyle = `var(--neon-${enemy.color})`;
       ctx.lineWidth = 2.5; // Thicker lines for visibility
 
+      const seed = parseInt(enemy.id, 36) || 0;
+
       // Draw procedural enemy design based on class - scaled up by 1.6x
       ctx.beginPath();
       if (enemy.type === 'interceptor') {
-        // Slick forward sweep design
+        // Sleek forward-swept wing fighter (Elite - 40 variants)
         ctx.moveTo(0, 24);
         ctx.lineTo(20, -12);
         ctx.lineTo(10, -3);
+        ctx.lineTo(4, -8);
+        ctx.lineTo(-4, -8);
         ctx.lineTo(-10, -3);
         ctx.lineTo(-20, -12);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Seeded sub wings/spikes (40 variants)
+        ctx.beginPath();
+        if (seed % 3 === 0) {
+          ctx.moveTo(12, -4);
+          ctx.lineTo(24, 8);
+          ctx.lineTo(16, 2);
+          ctx.moveTo(-12, -4);
+          ctx.lineTo(-24, 8);
+          ctx.lineTo(-16, 2);
+        } else if (seed % 3 === 1) {
+          ctx.moveTo(15, -6);
+          ctx.lineTo(22, -18);
+          ctx.moveTo(-15, -6);
+          ctx.lineTo(-22, -18);
+        } else {
+          ctx.moveTo(0, 24);
+          ctx.lineTo(0, 32);
+        }
+        ctx.stroke();
       } else if (enemy.type === 'cruiser') {
-        // Bulky tank shape
+        // Hexagonal armored gunship cruiser (General - 30 variants)
         ctx.moveTo(0, 32);
-        ctx.lineTo(26, 8);
-        ctx.lineTo(20, -24);
-        ctx.lineTo(-20, -24);
-        ctx.lineTo(-26, 8);
+        ctx.lineTo(22, 12);
+        ctx.lineTo(26, -16);
+        ctx.lineTo(8, -16);
+        ctx.lineTo(5, -26);
+        ctx.lineTo(-5, -26);
+        ctx.lineTo(-8, -16);
+        ctx.lineTo(-26, -16);
+        ctx.lineTo(-22, 12);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Seeded shields/solar arrays (30 variants)
+        ctx.beginPath();
+        if (seed % 3 === 0) {
+          ctx.rect(22, -8, 8, 16);
+          ctx.rect(-30, -8, 8, 16);
+        } else if (seed % 3 === 1) {
+          ctx.moveTo(26, -10);
+          ctx.lineTo(38, -10);
+          ctx.lineTo(38, 5);
+          ctx.lineTo(22, 5);
+          ctx.moveTo(-26, -10);
+          ctx.lineTo(-38, -10);
+          ctx.lineTo(-38, 5);
+          ctx.lineTo(-22, 5);
+        } else {
+          ctx.arc(0, -6, 12, 0, Math.PI * 2);
+        }
+        ctx.stroke();
       } else {
-        // Standard drone (small triangle)
+        // Drones - styled like a solar probe droid (Common - 50 variants)
         ctx.moveTo(0, 16);
-        ctx.lineTo(13, -13);
-        ctx.lineTo(0, -6);
-        ctx.lineTo(-13, -13);
+        ctx.lineTo(13, 2);
+        ctx.lineTo(8, -10);
+        ctx.lineTo(-8, -10);
+        ctx.lineTo(-13, 2);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Seeded antennae/lasers (50 variants)
+        ctx.beginPath();
+        if (seed % 3 === 0) {
+          ctx.moveTo(8, -10);
+          ctx.lineTo(12, -18);
+          ctx.moveTo(-8, -10);
+          ctx.lineTo(-12, -18);
+        } else if (seed % 3 === 1) {
+          ctx.moveTo(5, 8);
+          ctx.lineTo(5, 16);
+          ctx.moveTo(-5, 8);
+          ctx.lineTo(-5, 16);
+        } else {
+          ctx.arc(0, 0, 3, 0, Math.PI * 2);
+        }
+        ctx.stroke();
       }
-      ctx.closePath();
       
       // Translucent solid fill so they are highly visible
       let fillStyle = 'rgba(255, 255, 255, 0.12)';
@@ -1288,7 +1462,6 @@ export default function GameCanvas({
       if (enemy.color === 'green') fillStyle = 'rgba(57, 255, 20, 0.12)';
       ctx.fillStyle = fillStyle;
       ctx.fill();
-      ctx.stroke();
 
       ctx.restore();
 
@@ -1383,14 +1556,26 @@ export default function GameCanvas({
       ctx.strokeStyle = `var(--neon-${color})`;
       ctx.lineWidth = 2.5;
 
-      // Draw procedural futuristic ship shape
+      // Draw procedural player design based on color - Modern Spacecraft
       ctx.beginPath();
-      ctx.moveTo(0, -20);
-      ctx.lineTo(15, 12);
-      ctx.lineTo(0, 5);
-      ctx.lineTo(-15, 12);
+      ctx.moveTo(0, -22); // Cockpit nose tip
+      ctx.lineTo(6, -6);
+      ctx.lineTo(20, 10); // swept right wing
+      ctx.lineTo(7, 5);
+      ctx.lineTo(5, 12); // right engine nozzle
+      ctx.lineTo(0, 6); // core base
+      ctx.lineTo(-5, 12); // left engine nozzle
+      ctx.lineTo(-7, 5);
+      ctx.lineTo(-20, 10); // swept left wing
+      ctx.lineTo(-6, -6);
       ctx.closePath();
       ctx.stroke();
+
+      // Glowing Cockpit Glass
+      ctx.fillStyle = 'rgba(51, 204, 255, 0.4)';
+      ctx.beginPath();
+      ctx.arc(0, -5, 4, 0, Math.PI * 2);
+      ctx.fill();
 
       // Draw thruster fire particles procedurally
       ctx.fillStyle = `rgba(${color === 'red' ? '255, 51, 102' : color === 'blue' ? '51, 204, 255' : '57, 255, 20'}, 0.3)`;
@@ -1487,6 +1672,28 @@ export default function GameCanvas({
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
+    // Draw Pause Overlay in center
+    if (state.isPaused) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      // PAUSED Text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 3.5rem Orbitron, sans-serif';
+      ctx.fillText('PAUSED', canvas.width / 2, canvas.height / 2);
+
+      // Subtitle
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.font = '500 0.95rem Outfit, sans-serif';
+      ctx.fillText('CLICK THE PLAY BUTTON IN THE TOP RIGHT TO RESUME', canvas.width / 2, canvas.height / 2 + 55);
+
+      ctx.restore();
+    }
+
     ctx.restore(); // Pop Screen Shake
   };
 
@@ -1496,6 +1703,19 @@ export default function GameCanvas({
     if (enemyId.startsWith('boss-w-')) {
       checkBossShieldsCompleted(enemyId);
     }
+  };
+
+  const [paused, setPaused] = useState(false);
+
+  // Sync React state back to stateRef
+  useEffect(() => {
+    stateRef.current.isPaused = paused;
+  }, [paused]);
+
+  const togglePause = () => {
+    if (stateRef.current.isLocalGameOver) return;
+    GameAudio.play('click');
+    setPaused(prev => !prev);
   };
 
   return (
@@ -1509,6 +1729,39 @@ export default function GameCanvas({
         tabIndex="0"
         onKeyDown={handleKeyDown}
       />
+      
+      {/* Pause Button */}
+      <button
+        style={{
+          position: 'absolute',
+          top: '1.5rem',
+          right: '8.5rem',
+          background: 'rgba(12, 12, 28, 0.8)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          color: '#ffffff',
+          width: '38px',
+          height: '38px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+          pointerEvents: 'auto',
+          zIndex: 100,
+          fontFamily: 'var(--font-display)',
+          fontSize: '0.9rem',
+          outline: 'none'
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          togglePause();
+        }}
+        title={paused ? 'Resume Game' : 'Pause Game'}
+      >
+        {paused ? '▶' : '‖'}
+      </button>
+
       <GameHUD
         score={hudState.score}
         multiplier={hudState.multiplier}
