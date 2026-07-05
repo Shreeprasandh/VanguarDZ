@@ -161,7 +161,7 @@ class AudioManager {
 
         // Spatial panning based on screen position
         const panner = ctx.createStereoPanner();
-        const finalPan = Math.max(-0.5, Math.min(0.5, pan * 0.45));
+        const finalPan = Math.max(-1.0, Math.min(1.0, pan));
         panner.pan.setValueAtTime(finalPan, t);
 
         noiseGain.connect(panner);
@@ -198,7 +198,7 @@ class AudioManager {
         gainNode.gain.setValueAtTime(baseVolume, ctx.currentTime);
         
         const panner = ctx.createStereoPanner();
-        const finalPan = Math.max(-0.6, Math.min(0.6, pan * 0.45));
+        const finalPan = Math.max(-1.0, Math.min(1.0, pan));
         panner.pan.setValueAtTime(finalPan, ctx.currentTime);
         
         source.connect(gainNode);
@@ -218,7 +218,7 @@ class AudioManager {
         if (destination === this.context.destination) {
           try {
             const panner = this.context.createStereoPanner();
-            panner.pan.setValueAtTime(Math.max(-0.6, Math.min(0.6, pan * 0.45)), this.context.currentTime);
+            panner.pan.setValueAtTime(Math.max(-1.0, Math.min(1.0, pan)), this.context.currentTime);
             originalConnect.call(this, panner);
             originalConnect.call(panner, destination);
             return panner;
