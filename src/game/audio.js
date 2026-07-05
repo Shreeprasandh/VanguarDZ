@@ -818,9 +818,8 @@ class AudioManager {
       ];
       let patternIdx = 0;
 
-      const playChords = () => {
+      const playChords = (t) => {
         if (!this.menuAudioCtx || ctx.state === 'suspended') return;
-        const t = ctx.currentTime;
         const chordIdxVal = progIdx;
         const chord = progressions[progIdx];
         progIdx = (progIdx + 1) % progressions.length;
@@ -877,6 +876,16 @@ class AudioManager {
         });
       };
       
+      this.nextMenuChordTime = ctx.currentTime + 0.05;
+      const scheduler = () => {
+        if (!this.menuAudioCtx || ctx.state === 'suspended') return;
+        const scheduleAheadTime = 0.3; // schedule 300ms in advance to bypass GC pauses
+        while (this.nextMenuChordTime < ctx.currentTime + scheduleAheadTime) {
+          playChords(this.nextMenuChordTime);
+          this.nextMenuChordTime += 6.0; // increment exactly by 6 seconds to prevent drift
+        }
+      };
+
       let started = false;
       const startSynth = () => {
         if (started) return;
@@ -884,8 +893,10 @@ class AudioManager {
         const t = ctx.currentTime;
         this.menuMasterGain.gain.setValueAtTime(0.0001, t);
         this.menuMasterGain.gain.exponentialRampToValueAtTime(1.0, t + 3.0);
-        this.menuChordInterval = setInterval(playChords, 6000);
-        playChords();
+        
+        this.nextMenuChordTime = ctx.currentTime + 0.05;
+        this.menuChordInterval = setInterval(scheduler, 100); // Check every 100ms
+        scheduler();
       };
 
       this.startMenuSynthFn = startSynth;
@@ -974,9 +985,8 @@ class AudioManager {
         3: [1567.98, 987.77, 1318.51]  // Em: G6, B5, E6
       };
 
-      const playChords = () => {
+      const playChords = (t) => {
         if (!this.ingameAudioCtx || ctx.state === 'suspended') return;
-        const t = ctx.currentTime;
         const activeChordIdx = chordIdx;
         const chord = ingameChords[chordIdx];
         chordIdx = (chordIdx + 1) % ingameChords.length;
@@ -1031,6 +1041,16 @@ class AudioManager {
         });
       };
       
+      this.nextIngameChordTime = ctx.currentTime + 0.05;
+      const scheduler = () => {
+        if (!this.ingameAudioCtx || ctx.state === 'suspended') return;
+        const scheduleAheadTime = 0.3; // schedule 300ms in advance to bypass GC pauses
+        while (this.nextIngameChordTime < ctx.currentTime + scheduleAheadTime) {
+          playChords(this.nextIngameChordTime);
+          this.nextIngameChordTime += 4.0; // increment exactly by 4 seconds to prevent drift
+        }
+      };
+
       let started = false;
       const startSynth = () => {
         if (started) return;
@@ -1038,8 +1058,10 @@ class AudioManager {
         const t = ctx.currentTime;
         this.ingameMasterGain.gain.setValueAtTime(0.0001, t);
         this.ingameMasterGain.gain.exponentialRampToValueAtTime(1.0, t + 3.0);
-        this.ingameChordInterval = setInterval(playChords, 4000);
-        playChords();
+        
+        this.nextIngameChordTime = ctx.currentTime + 0.05;
+        this.ingameChordInterval = setInterval(scheduler, 100); // Check every 100ms
+        scheduler();
       };
 
       this.startIngameSynthFn = startSynth;
