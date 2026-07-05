@@ -163,13 +163,14 @@ export default function GameCanvas({
     render();
 
     // Start background music
-    GameAudio.playMusic('endure');
+    GameAudio.playMusic('ingame_synth');
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('keydown', handleGlobalKeyDown);
       cancelAnimationFrame(animationFrameId);
       GameAudio.stopMusic();
+      GameAudio.stopIngameSynthTheme();
     };
   }, []);
 
@@ -279,7 +280,16 @@ export default function GameCanvas({
                   if (data.wordId && data.wordId.startsWith('meteor')) {
                     GameAudio.play('meteor_explosion');
                   } else {
-                    GameAudio.play('explosion');
+                    const enemyType = targetEnemy ? targetEnemy.type : 'drone';
+                    if (enemyType === 'drone') GameAudio.play('explosion_drone');
+                    else if (enemyType === 'interceptor') GameAudio.play('explosion_interceptor');
+                    else if (enemyType === 'kamikaze') GameAudio.play('explosion_kamikaze');
+                    else if (enemyType === 'cruiser') GameAudio.play('explosion_cruiser');
+                    else if (enemyType === 'shield_linker') {
+                      GameAudio.play('explosion_linker');
+                      GameAudio.play('enemy_shield_shatter');
+                    } else if (enemyType === 'boss') GameAudio.play('boss_explosion');
+                    else GameAudio.play('explosion');
                   }
                   
                   // Update teammate's score locally for drawing
@@ -476,6 +486,19 @@ export default function GameCanvas({
     createExplosion(enemy.x, enemy.y, getColorHex(enemy.color), 22, true);
     if (enemy.type === 'meteor') {
       GameAudio.play('meteor_explosion');
+    } else if (enemy.type === 'drone') {
+      GameAudio.play('explosion_drone');
+    } else if (enemy.type === 'interceptor') {
+      GameAudio.play('explosion_interceptor');
+    } else if (enemy.type === 'kamikaze') {
+      GameAudio.play('explosion_kamikaze');
+    } else if (enemy.type === 'cruiser') {
+      GameAudio.play('explosion_cruiser');
+    } else if (enemy.type === 'shield_linker') {
+      GameAudio.play('explosion_linker');
+      GameAudio.play('enemy_shield_shatter');
+    } else if (enemy.type === 'boss') {
+      GameAudio.play('boss_explosion');
     } else {
       GameAudio.play('explosion');
     }
@@ -842,7 +865,10 @@ export default function GameCanvas({
       // We have an active target
       const enemy = state.enemies.find(e => e.id === state.activeWordId);
       if (enemy) {
-        if (enemy.isInvulnerable) return; // Linked target is invulnerable!
+        if (enemy.isInvulnerable) {
+          GameAudio.play('shield_hit');
+          return; // Linked target is invulnerable!
+        }
         const nextChar = enemy.word[enemy.targetIndex].toLowerCase();
         if (char === nextChar) {
           // If Overclock is active, hit 2 letters!
@@ -889,6 +915,16 @@ export default function GameCanvas({
     });
 
     if (eligibleEnemies.length === 0) {
+      // Check if they tried to target a linked invulnerable enemy
+      const hasInvulnerableMatch = state.enemies.some(e => {
+        const matchesColor = !isMultiplayer || e.color === shipColor;
+        const startsWithChar = e.word[0].toLowerCase() === char;
+        return matchesColor && startsWithChar && e.isInvulnerable;
+      });
+      if (hasInvulnerableMatch) {
+        GameAudio.play('shield_hit');
+      }
+
       // General typo outside active target
       if (state.shieldActive) {
         state.shieldActive = false;
@@ -1372,6 +1408,7 @@ export default function GameCanvas({
           const candidates = state.enemies.filter(cand => cand.id !== e.id && cand.type !== 'shield_linker' && cand.type !== 'boss' && cand.type !== 'anomaly');
           if (candidates.length > 0) {
             e.shieldLinkedEnemyId = candidates[Math.floor(Math.random() * candidates.length)].id;
+            GameAudio.play('shield_activate');
           } else {
             e.shieldLinkedEnemyId = null;
           }
@@ -1410,7 +1447,7 @@ export default function GameCanvas({
         if (enemy.pulseTimer >= 260) {
           enemy.pulseTimer = 0;
           enemy.pulseRings.push({ radius: 10, collided: false });
-          GameAudio.play('emp'); // Shockwave sound
+          GameAudio.play('anomaly_pulse'); // Shockwave sound
         }
 
         // Get player ship coordinates
@@ -1428,7 +1465,7 @@ export default function GameCanvas({
             ring.collided = true;
             state.jammedTimer = 72; // Jam controls for 1.2 seconds
             createExplosion(shipX, shipY, '#8b5cf6', 15, true);
-            GameAudio.play('emp');
+            GameAudio.play('anomaly_pulse');
           }
         });
         enemy.pulseRings = enemy.pulseRings.filter(r => r.radius < 400);
@@ -1992,6 +2029,8 @@ export default function GameCanvas({
       state.bullets.push(bullet);
     }
 
+    GameAudio.play('boss_laser');
+
     if (isMultiplayer && socket) {
       socket.send(JSON.stringify({
         type: 'SPAWN_BULLET',
@@ -2204,12 +2243,13 @@ export default function GameCanvas({
 
       // Spark massive explosion on the boss itself
       createExplosion(boss.x, boss.y, getColorHex(boss.words[shieldIndex].color), 30, true);
+      GameAudio.play('boss_hit');
 
       // Check if all boss words completed
       if (completedCount >= boss.words.length) {
         // Boss destroyed!
         createExplosion(boss.x, boss.y, '#ffffff', 80, true);
-        GameAudio.play('explosionLarge');
+        GameAudio.play('boss_explosion');
         state.bossObj = null;
         
         // Spawn shield claim orb animation

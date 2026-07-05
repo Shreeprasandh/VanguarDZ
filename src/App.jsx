@@ -66,6 +66,9 @@ export default function App() {
   useEffect(() => {
     const triggerAudioInit = () => {
       GameAudio.init();
+      if (screen === 'menu' || screen === 'lobby') {
+        GameAudio.playMusic('menu_theme');
+      }
       window.removeEventListener('click', triggerAudioInit);
       window.removeEventListener('keydown', triggerAudioInit);
     };
@@ -75,7 +78,19 @@ export default function App() {
       window.removeEventListener('click', triggerAudioInit);
       window.removeEventListener('keydown', triggerAudioInit);
     };
-  }, []);
+  }, [screen]);
+
+  // Play menu theme music when on menu or lobby screens
+  useEffect(() => {
+    if (screen === 'menu' || screen === 'lobby') {
+      GameAudio.playMusic('menu_theme');
+    } else {
+      GameAudio.stopMenuTheme();
+    }
+    return () => {
+      GameAudio.stopMenuTheme();
+    };
+  }, [screen]);
 
   // Set up WebSocket Connection
   useEffect(() => {
