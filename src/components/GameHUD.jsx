@@ -32,12 +32,13 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
             <div 
               style={{
                 width: '8px',
-                height: '50px',
+                height: '75px',
                 border: '1px solid rgba(255, 255, 255, 0.15)',
                 background: 'rgba(255, 255, 255, 0.02)',
                 borderRadius: '4px',
                 position: 'relative',
                 overflow: 'hidden',
+                opacity: 0.35,
                 boxShadow: '0 0 6px rgba(255, 255, 255, 0.15)'
               }}
               title={`Ship Integrity: ${Math.round(health)}%`}

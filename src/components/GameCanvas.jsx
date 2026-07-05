@@ -453,6 +453,7 @@ export default function GameCanvas({
       state.charge = Math.min(100, state.charge + 25);
       setCharge(state.charge);
       scoreGained += 1000;
+      state.anomalyWarningTimer = 0;
     }
 
     state.activeWordId = null;
@@ -1007,9 +1008,9 @@ export default function GameCanvas({
 
     if (state.isPaused) return;
 
-    // Gradual health regeneration over time (0.5 HP per second)
+    // Gradual health regeneration over time (1.0 HP per second)
     if (state.health < 100 && state.health > 0) {
-      state.health = Math.min(100, state.health + (0.5 / 60)); // 0.5 HP/s at 60fps
+      state.health = Math.min(100, state.health + (1.0 / 60)); // 1.0 HP/s at 60fps
       state.regenHudTimer = (state.regenHudTimer || 0) + 1;
       if (state.regenHudTimer >= 15) {
         state.regenHudTimer = 0;
@@ -1145,7 +1146,9 @@ export default function GameCanvas({
         state.waveState = 'playing';
         state.meteorShowerTriggered = false; // Reset meteor shower status
         if (isPrime(state.wave) && state.wave % 10 !== 0) {
-          spawnAnomalyMiniBoss();
+          if (Math.random() < 0.75) {
+            spawnAnomalyMiniBoss();
+          }
         }
       }
       return; // Skip spawning and enemy progression during intro banner
@@ -1239,14 +1242,13 @@ export default function GameCanvas({
     state.enemies.forEach(enemy => {
       // Kamikaze timer ticking
       if (enemy.type === 'kamikaze') {
-        enemy.kamikazeTimer = (enemy.kamikazeTimer !== undefined ? enemy.kamikazeTimer : 240) - 1; // 4 seconds
-        if (enemy.kamikazeTimer <= 0) {
-          takeDamage(35);
-          state.enemies = state.enemies.filter(e => e.id !== enemy.id);
-          if (state.activeWordId === enemy.id) state.activeWordId = null;
-          createExplosion(enemy.x, enemy.y, '#ef4444', 30, true);
-          GameAudio.play('explosionLarge');
-          return;
+        if (!enemy.isCharged) {
+          enemy.kamikazeTimer = (enemy.kamikazeTimer !== undefined ? enemy.kamikazeTimer : 240) - 1; // 4 seconds
+          if (enemy.kamikazeTimer <= 0) {
+            enemy.isCharged = true;
+            enemy.speed = 5.5; // Fast charge downwards!
+            enemy.color = 'red';
+          }
         }
       }
 
@@ -1281,13 +1283,16 @@ export default function GameCanvas({
       // Collision check with bottom border
       const thresholdY = canvas.height - 120;
       if (enemy.y >= thresholdY) {
-        // Damage player
-        takeDamage(20);
+        // Damage player: Kamikazes deal 35, normal enemies deal 20
+        const dmg = enemy.type === 'kamikaze' ? 35 : 20;
+        const explColor = enemy.type === 'kamikaze' ? '#ef4444' : '#ff3366';
+        
+        takeDamage(dmg);
         // Destroy enemy
         state.enemies = state.enemies.filter(e => e.id !== enemy.id);
         handleEnemyCompletion(enemy.id);
         if (state.activeWordId === enemy.id) state.activeWordId = null;
-        createExplosion(enemy.x, enemy.y, '#ff3366', 20, true);
+        createExplosion(enemy.x, enemy.y, explColor, dmg, true);
         GameAudio.play('explosionLarge');
       }
     });
@@ -2654,8 +2659,12 @@ export default function GameCanvas({
         ctx.fillStyle = '#ef4444';
         ctx.font = '700 11px Orbitron, sans-serif';
         ctx.textAlign = 'center';
-        const secondsLeft = (enemy.kamikazeTimer / 60).toFixed(1);
-        ctx.fillText(`${secondsLeft}s`, 0, -48);
+        if (enemy.isCharged) {
+          ctx.fillText(`!!! OVERDRIVE !!!`, 0, -48);
+        } else {
+          const secondsLeft = (enemy.kamikazeTimer / 60).toFixed(1);
+          ctx.fillText(`${secondsLeft}s`, 0, -48);
+        }
       }
 
       ctx.restore();
@@ -3469,6 +3478,7 @@ export default function GameCanvas({
       
       {/* Sound Button */}
       <button
+        className="game-top-btn"
         style={{
           position: 'absolute',
           top: '1.5rem',
@@ -3483,10 +3493,8 @@ export default function GameCanvas({
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          transition: 'all 0.2s',
           pointerEvents: 'auto',
           zIndex: 100,
-          opacity: 0.85,
           outline: 'none'
         }}
         onClick={(e) => {
@@ -3504,6 +3512,7 @@ export default function GameCanvas({
 
       {/* Pause Button */}
       <button
+        className="game-top-btn"
         style={{
           position: 'absolute',
           top: '1.5rem',
@@ -3518,12 +3527,10 @@ export default function GameCanvas({
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          transition: 'all 0.2s',
           pointerEvents: 'auto',
           zIndex: 100,
           fontFamily: 'var(--font-display)',
           fontSize: '0.9rem',
-          opacity: 0.85,
           outline: 'none'
         }}
         onClick={(e) => {

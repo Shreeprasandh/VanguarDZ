@@ -174,20 +174,34 @@ export default function InfoPopup({ onClose }) {
           </div>
         </div>
 
+        <style>{`
+          .btn-acknowledge-manual {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+            font-size: 0.75rem;
+            letter-spacing: 2.2px;
+            text-transform: uppercase;
+            padding: 0.6rem 2rem;
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+            font-family: var(--font-display);
+          }
+          .btn-acknowledge-manual:hover {
+            border-color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.45);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.22);
+            letter-spacing: 3px;
+          }
+        `}</style>
+
         <div style={{ display: 'flex', justifyContent: 'center', borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '1.2rem', paddingTop: '1.2rem' }}>
           <button 
-            className="btn" 
-            style={{ 
-              background: 'transparent', 
-              border: '1px solid rgba(255, 255, 255, 0.15)', 
-              borderRadius: '2px', 
-              fontSize: '0.75rem',
-              letterSpacing: '2px',
-              textTransform: 'uppercase',
-              padding: '0.5rem 1.8rem',
-              color: '#ffffff',
-              cursor: 'pointer'
-            }} 
+            className="btn-acknowledge-manual" 
             onClick={handleClose}
           >
             Acknowledge Manual

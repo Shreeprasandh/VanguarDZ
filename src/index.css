@@ -115,8 +115,10 @@ h1.game-title {
 }
 
 .btn:hover {
-  border-color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.22);
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 .btn:active {
@@ -131,6 +133,8 @@ h1.game-title {
 .btn-primary:hover {
   border-color: #ffffff;
   background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 .btn-red {
@@ -624,4 +628,15 @@ body::-webkit-scrollbar,
 .modal-overlay {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+}
+
+.game-top-btn {
+  opacity: 0.3;
+  transition: opacity 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.game-top-btn:hover {
+  opacity: 0.85 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.22);
 }

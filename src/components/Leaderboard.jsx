@@ -86,10 +86,10 @@ export default function Leaderboard({ leaderboard, onClose }) {
           }
 
           .btn-lb-close:hover {
-            border-color: var(--neon-blue);
-            background: rgba(74, 144, 226, 0.02);
-            color: var(--neon-blue);
-            text-shadow: 0 0 5px rgba(74, 144, 226, 0.3);
+            border-color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.45);
             letter-spacing: 4px;
           }
         `}</style>
