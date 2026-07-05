@@ -5,7 +5,7 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
     <div className="hud-container">
       <div className="hud-top">
         {/* Left Side: Score & Multiplier */}
-        <div className="hud-group" style={{ opacity: 0.25 }}>
+        <div className="hud-group" style={{ opacity: 0.75 }}>
           <span className="hud-label">Score</span>
           <span className="hud-value" style={{ color: 'var(--neon-blue)', textShadow: 'var(--shadow-blue)' }}>
             {score.toLocaleString()}
@@ -20,7 +20,7 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
 
         {/* Right Side: Wave & Health Bar */}
         <div className="hud-group" style={{ alignItems: 'flex-end', gap: '0.4rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', opacity: 0.75 }}>
             <span className="hud-label">Wave</span>
             <span className="hud-value" style={{ fontFamily: 'var(--font-display)', letterSpacing: '1px' }}>
               {wave}
@@ -38,7 +38,7 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
                 borderRadius: '4px',
                 position: 'relative',
                 overflow: 'hidden',
-                opacity: 0.65,
+                opacity: 0.6,
                 boxShadow: '0 0 6px rgba(255, 255, 255, 0.15)'
               }}
               title={`Ship Integrity: ${Math.round(health)}%`}
