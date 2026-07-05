@@ -499,6 +499,71 @@ class AudioManager {
       return;
     }
 
+    if (soundName === 'laserPlayer') {
+      if (this.muted) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const t = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1200, t);
+        osc.frequency.exponentialRampToValueAtTime(400, t + 0.1);
+        gain.gain.setValueAtTime(0.15, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(t + 0.15);
+      } catch(e) {}
+      return;
+    }
+
+    if (soundName === 'laser') {
+      if (this.muted) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const t = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(600, t);
+        osc.frequency.exponentialRampToValueAtTime(150, t + 0.15);
+        gain.gain.setValueAtTime(0.08, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(t + 0.2);
+      } catch(e) {}
+      return;
+    }
+
+    if (soundName === 'warning') {
+      if (this.muted) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const t = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, t);
+        osc.frequency.setValueAtTime(0, t + 0.1);
+        osc.frequency.setValueAtTime(880, t + 0.15);
+        
+        gain.gain.setValueAtTime(0.12, t);
+        gain.gain.setValueAtTime(0.0, t + 0.1);
+        gain.gain.setValueAtTime(0.12, t + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(t + 0.3);
+      } catch(e) {}
+      return;
+    }
+
     if (!this.initialized) this.init();
     if (this.muted) return;
 
