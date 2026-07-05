@@ -1189,7 +1189,7 @@ export default function GameCanvas({
         state.waveState = 'playing';
         state.meteorShowerTriggered = false; // Reset meteor shower status
         if (isPrime(state.wave) && state.wave % 10 !== 0) {
-          if (Math.random() < 0.75) {
+          if (Math.random() < 0.45) {
             spawnAnomalyMiniBoss();
           }
         }
@@ -1648,17 +1648,17 @@ export default function GameCanvas({
       let hp = 1;
       
       const rng = Math.random();
-      if (state.wave >= 5 && rng > 0.92) {
+      if (state.wave >= 11 && rng > 0.92) {
         type = 'shield_linker';
         speed = 0.4 + Math.random() * 0.15;
-      } else if (state.wave >= 4 && rng > 0.82) {
+      } else if (state.wave >= 7 && rng > 0.82) {
         type = 'cruiser'; // General
         speed = 0.3 + Math.random() * 0.2;
         hp = 2;
-      } else if (state.wave >= 3 && rng > 0.70) {
+      } else if (state.wave >= 5 && rng > 0.70) {
         type = 'kamikaze';
         speed = 1.3 + Math.random() * 0.3;
-      } else if (state.wave >= 2 && rng > 0.50) {
+      } else if (state.wave >= 3 && rng > 0.50) {
         type = 'interceptor'; // Elite
         speed = 0.9 + Math.random() * 0.4;
       }
