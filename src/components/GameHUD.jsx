@@ -27,46 +27,53 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
             </span>
           </div>
 
-          {/* Vertical Health Bar (looks just like charge bar, white color) */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem', marginTop: '1.6rem' }}>
-            <div 
-              style={{
-                width: '8px',
-                height: '112px',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                background: 'rgba(255, 255, 255, 0.02)',
-                borderRadius: '4px',
-                position: 'relative',
-                overflow: 'hidden',
-                opacity: 0.6,
-                boxShadow: '0 0 6px rgba(255, 255, 255, 0.15)'
-              }}
-              title={`Ship Integrity: ${Math.round(health)}%`}
-            >
-              <div 
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  width: '100%',
-                  height: `${Math.max(0, Math.min(100, health))}%`,
-                  background: '#ffffff',
-                  transition: 'height 0.15s ease'
-                }}
-              />
-            </div>
-            <span 
-              style={{ 
-                fontSize: '8px', 
-                fontFamily: 'var(--font-display)', 
-                color: '#ffffff', 
-                letterSpacing: '0.5px',
-                opacity: 0.45
-              }}
-            >
-              {Math.max(0, Math.round(health))}%
-            </span>
-          </div>
+          {/* Vertical Health Bar (white color, 50% transparency) */}
+          {(() => {
+            const safeHealth = (typeof health === 'number' && !isNaN(health)) ? health : 100;
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem', marginTop: '1.6rem' }}>
+                <div 
+                  style={{
+                    width: '8px',
+                    height: '112px',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    borderRadius: '4px',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    opacity: 0.95,
+                    boxShadow: '0 0 6px rgba(255, 255, 255, 0.1)'
+                  }}
+                  title={`Ship Integrity: ${Math.round(safeHealth)}%`}
+                >
+                  <div 
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${Math.max(0, Math.min(100, safeHealth))}%`,
+                      background: 'rgba(255, 255, 255, 0.5)',
+                      transition: 'height 0.15s ease'
+                    }}
+                  />
+                </div>
+                <span 
+                  style={{ 
+                    fontSize: '8px', 
+                    fontFamily: 'var(--font-display)', 
+                    color: '#ffffff', 
+                    letterSpacing: '0.5px',
+                    opacity: 0.5,
+                    fontWeight: 'normal',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {Math.max(0, Math.round(safeHealth))}%
+                </span>
+              </div>
+            );
+          })()}
         </div>
       </div>
 

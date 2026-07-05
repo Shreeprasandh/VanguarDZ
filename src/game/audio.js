@@ -92,6 +92,78 @@ class AudioManager {
       } catch (e) {}
       return;
     }
+    if (soundName === 'meteor_warning') {
+      if (this.muted) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = 'sawtooth';
+        const t = ctx.currentTime;
+        osc.frequency.setValueAtTime(220, t);
+        osc.frequency.linearRampToValueAtTime(380, t + 0.25);
+        osc.frequency.linearRampToValueAtTime(220, t + 0.50);
+        osc.frequency.linearRampToValueAtTime(380, t + 0.75);
+        osc.frequency.linearRampToValueAtTime(220, t + 1.00);
+        
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(600, t);
+        
+        gain.gain.setValueAtTime(0.0, t);
+        gain.gain.linearRampToValueAtTime(0.12, t + 0.05);
+        gain.gain.linearRampToValueAtTime(0.12, t + 0.90);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 1.10);
+        
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start();
+        osc.stop(t + 1.15);
+      } catch (e) {}
+      return;
+    }
+
+    if (soundName === 'meteor_explosion') {
+      if (this.muted) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const noise = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+        const gain = ctx.createGain();
+        
+        const t = ctx.currentTime;
+        
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(80, t);
+        osc.frequency.exponentialRampToValueAtTime(20, t + 0.5);
+        
+        noise.type = 'triangle';
+        noise.frequency.setValueAtTime(45, t);
+        noise.frequency.linearRampToValueAtTime(10, t + 0.4);
+        
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(180, t);
+        filter.frequency.exponentialRampToValueAtTime(40, t + 0.5);
+        
+        gain.gain.setValueAtTime(0.35, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+        
+        osc.connect(filter);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start();
+        osc.stop(t + 0.6);
+        noise.start();
+        noise.stop(t + 0.6);
+      } catch (e) {}
+      return;
+    }
 
     if (!this.initialized) this.init();
     if (this.muted) return;

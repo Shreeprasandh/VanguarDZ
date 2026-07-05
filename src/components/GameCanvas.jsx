@@ -276,7 +276,11 @@ export default function GameCanvas({
                   state.enemies = state.enemies.filter(e => e.id !== data.wordId);
                   handleEnemyCompletion(data.wordId);
                   createExplosion(data.x, data.y, getColorHex(mate.color), 25, true);
-                  GameAudio.play('explosion');
+                  if (data.wordId && data.wordId.startsWith('meteor')) {
+                    GameAudio.play('meteor_explosion');
+                  } else {
+                    GameAudio.play('explosion');
+                  }
                   
                   // Update teammate's score locally for drawing
                   mate.score += data.damage;
@@ -467,7 +471,11 @@ export default function GameCanvas({
 
     state.activeWordId = null;
     createExplosion(enemy.x, enemy.y, getColorHex(enemy.color), 22, true);
-    GameAudio.play('explosion');
+    if (enemy.type === 'meteor') {
+      GameAudio.play('meteor_explosion');
+    } else {
+      GameAudio.play('explosion');
+    }
     
     // Remove enemy from list
     state.enemies = state.enemies.filter(e => e.id !== enemy.id);
@@ -756,6 +764,14 @@ export default function GameCanvas({
   // Keyboard Event Handlers
   const handleKeyDown = (e) => {
     const state = stateRef.current;
+
+    // Toggle pause on Escape key
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      togglePause();
+      return;
+    }
+
     if (state.isLocalGameOver || state.isPaused) return;
     if (state.jammedTimer && state.jammedTimer > 0) return; // Controls jammed by anomaly pulsar
 
@@ -1186,11 +1202,11 @@ export default function GameCanvas({
     
     if (isHost && state.waveState === 'playing') {
       // Random Meteor Shower trigger logic
-      if (!state.bossObj && state.wave % 10 !== 0 && !isPrime(state.wave)) {
-        if (!state.meteorShowerTriggered && Math.random() < 0.0007) {
+      if (!state.bossObj && state.wave > 7 && state.wave % 10 !== 0 && !isPrime(state.wave)) {
+        if (!state.meteorShowerTriggered && Math.random() < 0.00035) {
           state.meteorShowerTriggered = true;
           state.meteorShowerWarningTimer = 180; // 3 seconds warning alert
-          GameAudio.play('emp');
+          GameAudio.play('meteor_warning');
         }
       }
 
@@ -1452,6 +1468,20 @@ export default function GameCanvas({
 
       enemy.y += enemy.speed * baseSpeedMultiplier * multiplayerDifficulty * speedFactor;
       
+      // Meteor fiery trailing particle emission
+      if (enemy.type === 'meteor' && speedFactor > 0 && Math.random() < 0.35) {
+        state.particles.push({
+          x: enemy.x + (Math.random() - 0.5) * 6,
+          y: enemy.y - 4,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: -enemy.speed * 0.4 - Math.random() * 1.0,
+          size: 1 + Math.random() * 3.5,
+          color: Math.random() < 0.55 ? '#f97316' : Math.random() < 0.45 ? '#ef4444' : '#fbbf24',
+          alpha: 0.9,
+          life: 15 + Math.random() * 20
+        });
+      }
+      
       if (speedFactor > 0) {
         enemy.patternAge = (enemy.patternAge || 0) + 1;
         const pat = enemy.movementPattern || 'straight';
@@ -1592,7 +1622,8 @@ export default function GameCanvas({
         y: -50 - (i * 45),
         speed,
         targetIndex: 0,
-        type: 'meteor'
+        type: 'meteor',
+        seed: Math.random() * Math.PI * 2
       });
     }
   };
@@ -2937,20 +2968,60 @@ export default function GameCanvas({
         ctx.stroke();
         ctx.restore();
       } else if (enemy.type === 'meteor') {
-        // Fiery space debris
-        ctx.fillStyle = '#ff781e';
-        ctx.beginPath();
-        ctx.arc(0, 0, 10, 0, Math.PI * 2);
-        ctx.fill();
+        // Draw multi-layered glowing flame tail pointing upwards (behind descent direction)
+        ctx.save();
+        const gradient = ctx.createLinearGradient(0, 0, 0, -38 - Math.random() * 14);
+        gradient.addColorStop(0, 'rgba(239, 68, 68, 0.7)');   // Bright red hot base
+        gradient.addColorStop(0.4, 'rgba(249, 115, 22, 0.5)'); // Orange mid-tail
+        gradient.addColorStop(1, 'rgba(253, 224, 71, 0.0)');   // Fading yellow tip
         
-        // Burning tail
-        ctx.fillStyle = 'rgba(255, 120, 30, 0.25)';
+        ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.moveTo(-10, -5);
-        ctx.lineTo(-22 - Math.random() * 12, 0);
-        ctx.lineTo(-10, 5);
+        ctx.moveTo(-10, 0);
+        ctx.quadraticCurveTo(0, -5, 0, -38 - Math.random() * 14);
+        ctx.quadraticCurveTo(0, -5, 10, 0);
         ctx.closePath();
         ctx.fill();
+        ctx.restore();
+
+        // Draw rotated craggy meteor core
+        ctx.save();
+        const angle = (enemy.seed || 0) + (enemy.y * 0.035);
+        ctx.rotate(angle);
+        
+        ctx.fillStyle = '#b45309';    // Dark amber/brown rocky core
+        ctx.strokeStyle = '#f97316';  // Glowing orange crust border
+        ctx.lineWidth = 1.8;
+        ctx.shadowColor = '#f97316';
+        ctx.shadowBlur = 12;
+
+        ctx.beginPath();
+        const numSides = 8;
+        const radius = 12;
+        const seedValue = parseInt(enemy.id.replace(/[^0-9]/g, '')) || 5;
+        
+        for (let j = 0; j < numSides; j++) {
+          const theta = (j / numSides) * Math.PI * 2;
+          const offset = 0.82 + 0.36 * Math.sin(seedValue * 0.7 + j * 1.3);
+          const rx = Math.cos(theta) * radius * offset;
+          const ry = Math.sin(theta) * radius * offset;
+          if (j === 0) ctx.moveTo(rx, ry);
+          else ctx.lineTo(rx, ry);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw glowing internal lava cracks
+        ctx.strokeStyle = '#fde047'; // Bright yellow-orange cracks
+        ctx.lineWidth = 1.0;
+        ctx.shadowBlur = 4;
+        ctx.shadowColor = '#fde047';
+        ctx.beginPath();
+        ctx.moveTo(-4, -2); ctx.lineTo(2, 4);
+        ctx.moveTo(3, -4); ctx.lineTo(-2, 3);
+        ctx.stroke();
+        ctx.restore();
       } else {
         // Drones - styled like a solar probe droid (Common - 50 variants)
         ctx.moveTo(0, 16);
@@ -3187,7 +3258,15 @@ export default function GameCanvas({
       ctx.restore();
 
       // Glowing Cockpit Glass
-      ctx.fillStyle = 'rgba(74, 144, 226, 0.45)';
+      const getRgbFromHex = (hex) => {
+        const cleanHex = hex.replace('#', '');
+        const r = parseInt(cleanHex.substring(0, 2), 16);
+        const g = parseInt(cleanHex.substring(2, 4), 16);
+        const b = parseInt(cleanHex.substring(4, 6), 16);
+        return `${r}, ${g}, ${b}`;
+      };
+
+      ctx.fillStyle = `rgba(${getRgbFromHex(resolvedColor)}, 0.45)`;
       ctx.beginPath();
       ctx.ellipse(0, -4, 3, 5, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -3201,7 +3280,7 @@ export default function GameCanvas({
       ctx.stroke();
 
       // Draw thruster fire particles procedurally
-      ctx.fillStyle = `rgba(${color === 'red' ? '255, 51, 102' : color === 'blue' ? '51, 204, 255' : '57, 255, 20'}, 0.3)`;
+      ctx.fillStyle = `rgba(${getRgbFromHex(resolvedColor)}, 0.3)`;
       ctx.beginPath();
       ctx.moveTo(-6, 7);
       ctx.lineTo(0, 7 + Math.random() * 15);
@@ -3810,61 +3889,191 @@ export default function GameCanvas({
       {/* Pause Menu Overlay in HTML/React when paused */}
       {paused && (
         <div 
+          className="modal-overlay"
           style={{
             position: 'absolute',
             top: 0,
             left: 0,
             width: '100%',
             height: '100%',
-            background: 'rgba(0, 0, 0, 0.75)',
+            background: 'rgba(2, 2, 6, 0.88)',
             display: 'flex',
-            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 90,
-            pointerEvents: 'auto'
+            pointerEvents: 'auto',
+            backdropFilter: 'blur(12px)'
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '3rem', fontWeight: 900, color: '#ffffff', letterSpacing: '8px', marginBottom: '1.2rem' }}>
-            PAUSED
-          </div>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.95rem', color: 'rgba(255, 255, 255, 0.4)', letterSpacing: '1px', marginBottom: '3.5rem' }}>
-            Click the play button in the top right or press Esc to resume
-          </div>
-          
-          <button
+          <div 
+            className="glass-panel" 
             style={{
-              background: 'transparent',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              color: 'rgba(255, 255, 255, 0.5)',
-              padding: '0.8rem 2.5rem',
-              fontSize: '0.85rem',
-              fontFamily: 'var(--font-display)',
-              letterSpacing: '2.5px',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              borderRadius: '2px',
-              outline: 'none'
-            }}
-            onClick={() => {
-              GameAudio.play('click');
-              setShowQuitConfirm(true);
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = 'var(--neon-red)';
-              e.target.style.color = 'var(--neon-red)';
-              e.target.style.background = 'rgba(207, 64, 66, 0.02)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-              e.target.style.color = 'rgba(255, 255, 255, 0.5)';
-              e.target.style.background = 'transparent';
+              position: 'relative',
+              width: '90%',
+              maxWidth: '380px',
+              background: 'rgba(5, 5, 12, 0.96)',
+              border: '1px solid rgba(74, 144, 226, 0.15)',
+              padding: '2.5rem 2rem',
+              borderRadius: '4px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.95), 0 0 30px rgba(74, 144, 226, 0.05)',
+              animation: 'fadeIn 0.3s ease-out',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '2rem'
             }}
           >
-            Quit to Menu
-          </button>
+            {/* Cyber Corner Brackets */}
+            <div style={{ position: 'absolute', top: '12px', left: '12px', width: '16px', height: '16px', borderTop: '2px solid rgba(74, 144, 226, 0.3)', borderLeft: '2px solid rgba(74, 144, 226, 0.3)' }} />
+            <div style={{ position: 'absolute', top: '12px', right: '12px', width: '16px', height: '16px', borderTop: '2px solid rgba(74, 144, 226, 0.3)', borderRight: '2px solid rgba(74, 144, 226, 0.3)' }} />
+            <div style={{ position: 'absolute', bottom: '12px', left: '12px', width: '16px', height: '16px', borderBottom: '2px solid rgba(74, 144, 226, 0.3)', borderLeft: '2px solid rgba(74, 144, 226, 0.3)' }} />
+            <div style={{ position: 'absolute', bottom: '12px', right: '12px', width: '16px', height: '16px', borderBottom: '2px solid rgba(74, 144, 226, 0.3)', borderRight: '2px solid rgba(74, 144, 226, 0.3)' }} />
+
+            {/* Header */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ 
+                fontFamily: 'var(--font-display)', 
+                fontSize: '1.6rem', 
+                fontWeight: 900, 
+                color: '#ffffff', 
+                letterSpacing: '5px', 
+                textShadow: '0 0 15px rgba(74, 144, 226, 0.4)',
+                marginBottom: '0.4rem',
+                textTransform: 'uppercase'
+              }}>
+                Tactical Pause
+              </div>
+              <div style={{ 
+                fontFamily: 'var(--font-body)', 
+                fontSize: '0.75rem', 
+                color: 'rgba(255, 255, 255, 0.4)', 
+                letterSpacing: '1.5px', 
+                textTransform: 'uppercase'
+              }}>
+                {isMultiplayer ? 'Co-op Session standby' : 'Solo Mission standby'}
+              </div>
+            </div>
+
+            {/* Diagnostics Stats */}
+            <div style={{ 
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+              borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              padding: '1.5rem 0'
+            }}>
+              {/* Wave */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.55)', letterSpacing: '0.5px' }}>Wave:</span>
+                <span style={{ fontFamily: 'var(--font-display)', color: 'var(--neon-blue)', fontWeight: 'bold' }}>{hudState.wave}</span>
+              </div>
+
+              {/* Score */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.55)', letterSpacing: '0.5px' }}>Score:</span>
+                <span style={{ fontFamily: 'var(--font-display)', color: 'var(--neon-yellow)', fontWeight: 'bold' }}>{hudState.score.toLocaleString()}</span>
+              </div>
+
+              {/* Multiplier */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.55)', letterSpacing: '0.5px' }}>Multiplier:</span>
+                <span style={{ 
+                  fontFamily: 'var(--font-display)', 
+                  color: 'var(--neon-green)', 
+                  fontWeight: 'bold',
+                  textShadow: '0 0 8px rgba(46, 189, 89, 0.3)'
+                }}>
+                  {hudState.multiplier}x
+                </span>
+              </div>
+
+              {/* Shield */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.55)', letterSpacing: '0.5px' }}>Shield:</span>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  {stateRef.current.shieldActive && (
+                    <span style={{ 
+                      fontSize: '0.7rem', 
+                      color: 'var(--neon-green)', 
+                      border: '1px solid var(--neon-green)', 
+                      padding: '1px 6px', 
+                      borderRadius: '3px', 
+                      textTransform: 'uppercase', 
+                      fontFamily: 'var(--font-display)',
+                      letterSpacing: '0.5px'
+                    }}>
+                      Active
+                    </span>
+                  )}
+                  <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                    {[0, 1, 2].map(sIdx => {
+                      const isClaimed = bossShields > sIdx;
+                      return (
+                        <div 
+                          key={sIdx}
+                          style={{
+                            width: '12px',
+                            height: '12px',
+                            borderRadius: '50%',
+                            border: isClaimed ? '1px solid #38bdf8' : '1px dashed rgba(56, 189, 248, 0.25)',
+                            background: isClaimed ? 'rgba(56, 189, 248, 0.4)' : 'transparent',
+                            boxShadow: isClaimed ? '0 0 6px rgba(56, 189, 248, 0.6)' : 'none',
+                            opacity: isClaimed ? 1.0 : 0.25,
+                            transition: 'all 0.3s ease'
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.8rem', alignItems: 'center' }}>
+              <button
+                className="btn btn-blue"
+                style={{
+                  width: '100%',
+                  maxWidth: '280px',
+                  padding: '0.8rem',
+                  fontSize: '0.85rem',
+                  fontFamily: 'var(--font-display)',
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase',
+                  borderRadius: '2px',
+                  cursor: 'pointer'
+                }}
+                onClick={togglePause}
+              >
+                Resume Mission
+              </button>
+
+              <button
+                className="btn btn-red"
+                style={{
+                  width: '100%',
+                  maxWidth: '280px',
+                  padding: '0.8rem',
+                  fontSize: '0.85rem',
+                  fontFamily: 'var(--font-display)',
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase',
+                  borderRadius: '2px',
+                  cursor: 'pointer'
+                }}
+                onClick={() => {
+                  GameAudio.play('click');
+                  setShowQuitConfirm(true);
+                }}
+              >
+                Abandon Mission
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
