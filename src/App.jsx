@@ -114,12 +114,9 @@ export default function App() {
 
   // Set up WebSocket Connection
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'localhost:3000'
-      : window.location.host;
-    
-    const socketUrl = `${protocol}//${host}`;
+    const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'ws://localhost:3000'
+      : 'wss://vanguardz.onrender.com';
     console.log(`Connecting to WebSocket: ${socketUrl}`);
 
     let socketOpen = false;
