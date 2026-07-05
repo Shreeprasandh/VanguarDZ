@@ -1938,7 +1938,8 @@ export default function GameCanvas({
         hp = 2;
       } else if (state.wave >= 5 && rng > 0.70) {
         type = 'kamikaze';
-        speed = 1.3 + Math.random() * 0.3;
+        const waveScale = Math.min(1.0, (state.wave - 5) / 20); // 0.0 at wave 5, scaling to 1.0 at wave 25+
+        speed = (0.7 + waveScale * 0.6) + Math.random() * (0.2 + waveScale * 0.1);
       } else if (state.wave >= 3 && rng > 0.50) {
         type = 'interceptor'; // Elite
         speed = 0.9 + Math.random() * 0.4;
