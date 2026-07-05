@@ -166,6 +166,13 @@ export default function App() {
               setMaxPlayers(data.maxPlayers || 3);
               setIsMultiplayer(true);
               changeScreenWithFade('lobby');
+              // Sync profile immediately on room creation
+              socket.send(JSON.stringify({
+                type: 'UPDATE_PROFILE',
+                username: username,
+                color: shipColor,
+                skills: equippedSkills
+              }));
               break;
 
             case 'ROOM_JOINED':
@@ -174,6 +181,13 @@ export default function App() {
               setMaxPlayers(data.maxPlayers || 3);
               setIsMultiplayer(true);
               changeScreenWithFade('lobby');
+              // Sync profile immediately on room join
+              socket.send(JSON.stringify({
+                type: 'UPDATE_PROFILE',
+                username: username,
+                color: shipColor,
+                skills: equippedSkills
+              }));
               break;
 
             case 'ROOM_PLAYERS_UPDATE':
