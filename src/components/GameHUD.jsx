@@ -6,6 +6,12 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
   const localPlayer = isMultiplayer && teamPlayers ? teamPlayers.find(p => p.socketId === localPlayerId) : null;
   const localColor = localPlayer?.color || localPlayerColor || 'blue';
 
+  const getRgbColor = (color) => {
+    if (color === 'red') return '207, 64, 66';
+    if (color === 'green') return '46, 189, 89';
+    return '74, 144, 226'; // blue / default
+  };
+
   return (
     <div className="hud-container">
       <div className="hud-top">
@@ -38,6 +44,7 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
             {isMultiplayer && teammates.map((mate) => {
               const mateHealth = mate.health !== undefined ? mate.health : 100;
               const mateColor = mate.color || 'blue';
+              const resolvedRgb = getRgbColor(mateColor);
               return (
                 <div 
                   key={mate.socketId} 
@@ -48,12 +55,13 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
                     style={{
                       width: '8px',
                       height: '112px',
-                      border: `1px solid var(--neon-${mateColor})`,
+                      border: `1px solid rgba(${resolvedRgb}, 0.35)`,
                       background: 'rgba(255, 255, 255, 0.03)',
                       borderRadius: '4px',
                       position: 'relative',
                       overflow: 'hidden',
-                      boxShadow: `0 0 5px rgba(${mateColor === 'red' ? '207, 64, 66' : mateColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.25)`
+                      opacity: 0.85, // lower opacity container
+                      boxShadow: `0 0 4px rgba(${resolvedRgb}, 0.15)`
                     }}
                   >
                     <div 
@@ -63,7 +71,7 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
                         left: 0,
                         width: '100%',
                         height: `${Math.max(0, Math.min(100, mateHealth))}%`,
-                        background: `var(--neon-${mateColor})`,
+                        background: `rgba(${resolvedRgb}, 0.35)`, // low opacity bar fill
                         transition: 'height 0.15s ease'
                       }}
                     />
@@ -75,7 +83,7 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
                       color: `var(--neon-${mateColor})`, 
                       letterSpacing: '0.5px',
                       fontWeight: 'bold',
-                      opacity: 0.75
+                      opacity: 0.65
                     }}
                   >
                     {Math.max(0, Math.round(mateHealth))}%
@@ -87,6 +95,7 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
             {/* Local Player's Health Bar (drawn on the right) */}
             {(() => {
               const safeHealth = (typeof health === 'number' && !isNaN(health)) ? health : 100;
+              const resolvedRgb = getRgbColor(localColor);
               return (
                 <div 
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem' }} 
@@ -96,12 +105,13 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
                     style={{
                       width: '8px',
                       height: '112px',
-                      border: `1px solid var(--neon-${localColor})`,
+                      border: `1px solid rgba(${resolvedRgb}, 0.45)`,
                       background: 'rgba(255, 255, 255, 0.03)',
                       borderRadius: '4px',
                       position: 'relative',
                       overflow: 'hidden',
-                      boxShadow: `0 0 5px rgba(${localColor === 'red' ? '207, 64, 66' : localColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.25)`
+                      opacity: 0.9, // lower opacity container
+                      boxShadow: `0 0 5px rgba(${resolvedRgb}, 0.2)`
                     }}
                   >
                     <div 
@@ -111,7 +121,7 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
                         left: 0,
                         width: '100%',
                         height: `${Math.max(0, Math.min(100, safeHealth))}%`,
-                        background: `var(--neon-${localColor})`,
+                        background: `rgba(${resolvedRgb}, 0.35)`, // low opacity bar fill
                         transition: 'height 0.15s ease'
                       }}
                     />
@@ -123,7 +133,7 @@ export default function GameHUD({ score, multiplier, wave, isMultiplayer, teamPl
                       color: `var(--neon-${localColor})`, 
                       letterSpacing: '0.5px',
                       fontWeight: 'bold',
-                      opacity: 0.95
+                      opacity: 0.8
                     }}
                   >
                     {Math.max(0, Math.round(safeHealth))}%

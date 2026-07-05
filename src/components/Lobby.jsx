@@ -65,7 +65,7 @@ export default function Lobby({ roomCode, players, maxPlayers = 3, localPlayerId
       // Check if another player has the same color
       const conflictingPlayer = players.find(p => p.socketId !== localPlayerInRoom?.socketId && p.color === localPlayerColor);
       if (conflictingPlayer) {
-        setErrorMessage(`Spacecraft signature conflict: Pilot [${conflictingPlayer.username}] has already registered the ${localPlayerColor.toUpperCase()} weapon grid. You must configure your spacecraft to a different color to ready up.`);
+        setErrorMessage(`Defensive Colour Conflict: Pilot [${conflictingPlayer.username}] has already registered the ${localPlayerColor.toUpperCase()} weapon signature. Please select a different spacecraft colour before registering.`);
         return;
       }
     }

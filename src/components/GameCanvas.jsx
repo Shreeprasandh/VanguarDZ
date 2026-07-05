@@ -265,7 +265,7 @@ export default function GameCanvas({
             const targetEnemy = state.enemies.find(e => e.id === data.wordId);
             
             if (mate && targetEnemy) {
-              const shipX = getShipX(mate.position, window.innerWidth);
+              const shipX = state.playerPositions[mate.socketId] || getShipTargetX(mate.socketId, window.innerWidth);
               const shipY = window.innerHeight - 80;
               
               // Add laser beam
@@ -418,7 +418,7 @@ export default function GameCanvas({
             if (data.socketId !== socket.id) {
               const mate = players.find(p => p.socketId === data.socketId);
               if (mate) {
-                const mx = getShipX(mate.position, window.innerWidth);
+                const mx = state.playerPositions[mate.socketId] || getShipTargetX(mate.socketId, window.innerWidth);
                 const my = window.innerHeight - 80;
                 const skill = SKILLS_DB.find(s => s.id === data.skillId);
                 const resolvedColor = skill ? skill.color : '#ffffff';
@@ -528,9 +528,18 @@ export default function GameCanvas({
             state.bullets = [];
             state.waveSpawnedCount = 0;
             state.waveTotalToSpawn = 10 + data.wave * 4;
-            // Fully heal client player between waves
+            // Fully heal client player and teammates between waves
             state.health = 100;
-            setHudState(prev => ({ ...prev, health: 100 }));
+            if (state.teammates) {
+              state.teammates.forEach(m => {
+                m.health = 100;
+              });
+            }
+            setHudState(prev => ({ 
+              ...prev, 
+              health: 100,
+              teammates: state.teammates ? [...state.teammates] : []
+            }));
             // Shift target nebula colors
             state.targetNebulaColor = {
               h: (260 + data.wave * 30) % 360,
@@ -933,14 +942,30 @@ export default function GameCanvas({
     return screenWidth / 2; // host/center
   };
 
+  const getShipTargetX = (socketId, screenWidth) => {
+    if (!isMultiplayer || !players || players.length === 0) {
+      return screenWidth / 2;
+    }
+    const index = players.findIndex(p => p.socketId === socketId);
+    if (index === -1) return screenWidth / 2;
+
+    const activeCount = players.length;
+    if (activeCount === 3) {
+      if (index === 0) return screenWidth * 0.5; // center
+      if (index === 1) return screenWidth * 0.75; // right
+      if (index === 2) return screenWidth * 0.25; // left
+    } else if (activeCount === 2) {
+      if (index === 0) return screenWidth * 0.25; // left
+      if (index === 1) return screenWidth * 0.75; // right
+    }
+    return screenWidth * 0.5; // 1 player center
+  };
+
   const getLocalShipX = (screenWidth) => {
     if (isMultiplayer && socket?.id && stateRef.current.playerPositions[socket.id] !== undefined) {
       return stateRef.current.playerPositions[socket.id];
     }
-    const localPosition = isMultiplayer 
-      ? players.find(p => p.socketId === socket?.id)?.position || 'center' 
-      : 'center';
-    return getShipX(localPosition, screenWidth);
+    return getShipTargetX(socket?.id, screenWidth);
   };
 
   const getPan = (x) => {
@@ -1989,10 +2014,10 @@ export default function GameCanvas({
       }
     });
 
-    // Periodic synchronization from Host to Guest to prevent drift (60 frames = 1s)
+    // Periodic synchronization from Host to Guest to prevent drift (12 frames = 0.2s)
     if (isMultiplayer && isHost && state.enemies.length > 0) {
       state.syncTimer = (state.syncTimer || 0) + 1;
-      if (state.syncTimer >= 60) {
+      if (state.syncTimer >= 12) {
         state.syncTimer = 0;
         const enemyPositions = state.enemies.map(e => ({ id: e.id, x: e.x, y: e.y }));
         const bulletPositions = state.bullets.map(b => ({ id: b.id, x: b.x, y: b.y }));
@@ -3966,9 +3991,10 @@ export default function GameCanvas({
 
       // Secondary detailed wing panel stripes
       ctx.save();
+      const currentAlpha = ctx.globalAlpha;
       const resolvedColor = getColorHex(color);
       ctx.strokeStyle = resolvedColor;
-      ctx.globalAlpha = 0.35;
+      ctx.globalAlpha = 0.35 * currentAlpha;
       ctx.lineWidth = 1.0;
       ctx.beginPath();
       // Left wing panels
@@ -3994,7 +4020,7 @@ export default function GameCanvas({
         return `${r}, ${g}, ${b}`;
       };
 
-      ctx.fillStyle = `rgba(${getRgbFromHex(resolvedColor)}, 0.45)`;
+      ctx.fillStyle = `rgba(${getRgbFromHex(resolvedColor)}, ${0.45 * currentAlpha})`;
       ctx.beginPath();
       ctx.ellipse(0, -4, 3, 5, 0, 0, Math.PI * 2);
       ctx.fill();
@@ -4008,7 +4034,7 @@ export default function GameCanvas({
       ctx.stroke();
 
       // Draw thruster fire particles procedurally
-      ctx.fillStyle = `rgba(${getRgbFromHex(resolvedColor)}, 0.3)`;
+      ctx.fillStyle = `rgba(${getRgbFromHex(resolvedColor)}, ${0.3 * currentAlpha})`;
       ctx.beginPath();
       ctx.moveTo(-6, 7);
       ctx.lineTo(0, 7 + Math.random() * 15);
@@ -4017,7 +4043,7 @@ export default function GameCanvas({
       ctx.fill();
 
       // Draw username under the ship small
-      ctx.fillStyle = '#8a8fa3';
+      ctx.fillStyle = `rgba(138, 143, 163, ${currentAlpha})`;
       ctx.font = '400 11px Outfit, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(labelText, 0, 30);
@@ -4073,7 +4099,7 @@ export default function GameCanvas({
     // Update smooth positions for active players
     if (players) {
       players.forEach(p => {
-        const targetX = getShipX(p.position, canvas.width);
+        const targetX = getShipTargetX(p.socketId, canvas.width);
         if (state.playerPositions[p.socketId] === undefined) {
           state.playerPositions[p.socketId] = targetX;
         } else {
@@ -4086,7 +4112,7 @@ export default function GameCanvas({
     if (state.leavingShips) {
       state.leavingShips.forEach(ship => {
         ship.y += ship.vy;
-        ship.vy += 0.3; // gravity acceleration
+        ship.vy += 0.35; // drift back / accelerate downwards
         ship.opacity = Math.max(0, ship.opacity - 0.02);
       });
       state.leavingShips = state.leavingShips.filter(ship => ship.y < canvas.height + 150 && ship.opacity > 0);
@@ -4095,7 +4121,7 @@ export default function GameCanvas({
     if (isMultiplayer && players) {
       // Draw all active teammates in co-op
       players.forEach(p => {
-        const sx = state.playerPositions[p.socketId] || getShipX(p.position, canvas.width);
+        const sx = state.playerPositions[p.socketId] || getShipTargetX(p.socketId, canvas.width);
         let sy = canvas.height - 80;
         if (state.waveState === 'docking') {
           sy -= state.dockingShipYOffset;
