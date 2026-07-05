@@ -528,16 +528,16 @@ export default function GameCanvas({
             state.bullets = [];
             state.waveSpawnedCount = 0;
             state.waveTotalToSpawn = 10 + data.wave * 4;
-            // Fully heal client player and teammates between waves
-            state.health = 100;
+            // Partially heal client player and teammates between waves (refill by 50)
+            state.health = Math.min(100, state.health + 50);
             if (state.teammates) {
               state.teammates.forEach(m => {
-                m.health = 100;
+                m.health = Math.min(100, (m.health || 0) + 50);
               });
             }
             setHudState(prev => ({ 
               ...prev, 
-              health: 100,
+              health: state.health,
               teammates: state.teammates ? [...state.teammates] : []
             }));
             // Shift target nebula colors
@@ -2780,9 +2780,9 @@ export default function GameCanvas({
     const state = stateRef.current;
     if (state.wave >= 100) return; // Wave 100 is the final impossible level
     
-    // Fully heal player between waves
-    state.health = 100;
-    setHudState(prev => ({ ...prev, health: 100 }));
+    // Partially heal player between waves (refill by 50)
+    state.health = Math.min(100, state.health + 50);
+    setHudState(prev => ({ ...prev, health: state.health }));
     
     const nextWaveNum = state.wave + 1;
     
