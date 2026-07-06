@@ -1722,7 +1722,7 @@ export default function GameCanvas({
           enemy.kamikazeTimer = (enemy.kamikazeTimer !== undefined ? enemy.kamikazeTimer : 240) - 1; // 4 seconds
           if (enemy.kamikazeTimer <= 0) {
             enemy.isCharged = true;
-            enemy.speed = 5.5; // Fast charge downwards!
+            enemy.speed = 3.6; // Fast charge downwards!
             enemy.color = 'red';
           }
         }
