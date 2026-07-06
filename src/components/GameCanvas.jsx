@@ -1648,7 +1648,7 @@ export default function GameCanvas({
       }
 
       const now = Date.now();
-      const spawnInterval = state.wave >= 100 ? 400 : Math.max(1500, 2600 - state.wave * 35); // Spawning speed scales up (caps at Wave 31)
+      const spawnInterval = state.wave >= 100 ? 400 : Math.max(1500, 2950 - state.wave * 50); // Spawning speed scales up (caps at Wave 29)
       const totalToSpawn = state.wave >= 100 ? 999999 : state.waveTotalToSpawn;
       
       if (now - state.lastSpawnTime > spawnInterval && state.waveSpawnedCount < totalToSpawn) {
@@ -1815,7 +1815,7 @@ export default function GameCanvas({
     });
 
     // Enemies movement
-    const baseSpeedMultiplier = state.wave >= 100 ? 5.5 : (1.375 + (state.wave * 0.025)); // Speed scales up with waves (75% adjustment for wave 80 limit)
+    const baseSpeedMultiplier = state.wave >= 100 ? 5.5 : (1.172 + (state.wave * 0.028)); // Speed scales up with waves (75% adjustment for wave 80 limit)
     
     let multiplayerDifficulty = 1.0;
     if (isMultiplayer && players) {
