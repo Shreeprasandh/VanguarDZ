@@ -108,7 +108,7 @@ export default function Leaderboard({ leaderboard, onClose }) {
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-            {leaderboard.map((item, index) => (
+            {leaderboard.slice(0, 10).map((item, index) => (
               <div key={index} className="lb-row">
                 <span style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                   <span style={{ color: 'var(--text-secondary)', width: '24px', textAlign: 'left', fontSize: '0.8rem' }}>

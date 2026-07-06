@@ -139,7 +139,7 @@ wss.on('connection', (ws) => {
           }
 
           highScores.sort((a, b) => b.score - a.score);
-          highScores = highScores.slice(0, 15);
+          highScores = highScores.slice(0, 10);
 
           try {
             fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(highScores, null, 2));
