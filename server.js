@@ -262,6 +262,9 @@ wss.on('connection', (ws) => {
 
           player.roomId = code;
           player.state = 'lobby';
+          player.username = data.username || player.username;
+          player.color = data.color || player.color;
+          player.skills = data.skills || [];
 
           // Notify joined player
           ws.send(JSON.stringify({

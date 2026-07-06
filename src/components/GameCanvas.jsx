@@ -145,9 +145,30 @@ export default function GameCanvas({
     if (!canvas) return;
 
     // Set canvas dimensions
+    // Set canvas dimensions
     const resizeCanvas = () => {
+      const oldWidth = canvas.width;
+      const oldHeight = canvas.height;
+
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+
+      const newWidth = canvas.width;
+      const newHeight = canvas.height;
+
+      // Adjust scenery coordinates dynamically so they stretch/align to the new screen boundaries
+      if (oldWidth > 0 && oldHeight > 0 && stateRef.current.scenery && stateRef.current.scenery.length > 0) {
+        stateRef.current.scenery.forEach(item => {
+          item.y = (item.y / oldHeight) * newHeight;
+          const wasLeft = item.x < oldWidth / 2;
+          if (wasLeft) {
+            item.x = (item.x / oldWidth) * newWidth;
+          } else {
+            const distFromRight = oldWidth - item.x;
+            item.x = newWidth - (distFromRight / oldWidth) * newWidth;
+          }
+        });
+      }
       
       // Initialize scenery if empty
       if (stateRef.current.scenery.length === 0) {
@@ -2029,7 +2050,9 @@ export default function GameCanvas({
           if (enemy.kamikazeTimer <= 0) {
             enemy.isCharged = true;
             enemy.speed = 3.6; // Fast charge downwards!
-            enemy.color = 'red';
+            if (!isMultiplayer) {
+              enemy.color = 'red';
+            }
           }
         }
       }
@@ -2579,10 +2602,12 @@ export default function GameCanvas({
     const enemyId = 'anomaly';
     
     let anomalyColor = 'purple';
-    if (isMultiplayer && players && players.length > 0) {
-      const colors = players.map(p => p.color).filter(Boolean);
-      if (colors.length > 0) {
-        anomalyColor = colors[Math.floor(Math.random() * colors.length)];
+    if (isMultiplayer) {
+      const activeColors = getActivePlayerColors();
+      if (activeColors.length > 0) {
+        anomalyColor = activeColors[Math.floor(Math.random() * activeColors.length)];
+      } else {
+        anomalyColor = shipColor;
       }
     }
 
@@ -2904,10 +2929,10 @@ export default function GameCanvas({
     // Co-op boss contains cycling colored words
     const wordCount = 3 + Math.floor(state.wave / 2);
     let bossWords = [];
-    if (isMultiplayer && players) {
-      const colors = players.map(p => p.color).filter(Boolean);
+    if (isMultiplayer) {
+      const activeColors = getActivePlayerColors();
       for (let i = 0; i < wordCount; i++) {
-        const c = colors[i % colors.length];
+        const c = activeColors[i % activeColors.length] || shipColor;
         bossWords.push({
           id: `boss-w-${i}`,
           word: getWordForEnemy('boss', state.wave, state.usedWords),
@@ -2976,11 +3001,11 @@ export default function GameCanvas({
 
     const players = state.players || [];
     let miniBossName = 'AEGIS VINDICATOR';
-    let miniBossColor = 'white';
+    let miniBossColor = isMultiplayer ? shipColor : 'white';
 
     if (state.wave === 5) {
       miniBossName = 'AEGIS VINDICATOR';
-      miniBossColor = 'white';
+      miniBossColor = isMultiplayer ? shipColor : 'white';
     } else if (state.wave === 15) {
       miniBossName = 'WARP SPECTRE';
       miniBossColor = 'blue';
@@ -2998,10 +3023,12 @@ export default function GameCanvas({
       miniBossColor = 'purple';
     }
 
-    if (isMultiplayer && players && players.length > 0) {
-      const colors = players.map(p => p.color).filter(Boolean);
-      if (colors.length > 0) {
-        miniBossColor = colors[Math.floor(Math.random() * colors.length)];
+    if (isMultiplayer) {
+      const activeColors = getActivePlayerColors();
+      if (activeColors.length > 0) {
+        miniBossColor = activeColors[Math.floor(Math.random() * activeColors.length)];
+      } else {
+        miniBossColor = shipColor;
       }
     }
 

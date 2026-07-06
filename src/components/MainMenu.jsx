@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { GameAudio } from '../game/audio';
 
 export default function MainMenu({
@@ -11,8 +11,7 @@ export default function MainMenu({
   onJoinRoom,
   onOpenLeaderboard,
   onOpenEditProfile,
-  onOpenStory,
-  onOpenInfo
+  onOpenStory
 }) {
   const [showTeamOptions, setShowTeamOptions] = useState(false);
   const [roomCodeInput, setRoomCodeInput] = useState('');

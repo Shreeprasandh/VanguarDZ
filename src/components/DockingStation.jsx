@@ -27,7 +27,7 @@ export default function DockingStation({
         ready: ready
       }));
     }
-  }, [selectedColor, selectedSkills, ready, isMultiplayer]);
+  }, [selectedColor, selectedSkills, ready, isMultiplayer, socket]);
 
   const [selectedSlot, setSelectedSlot] = useState(0); // 0, 1, or 2
 

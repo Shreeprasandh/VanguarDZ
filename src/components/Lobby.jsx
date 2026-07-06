@@ -25,10 +25,6 @@ export default function Lobby({ roomCode, players, maxPlayers = 3, localPlayerId
     return players.find(p => p.position === pos);
   };
 
-  const handleColorClick = (color) => {
-    GameAudio.play('click');
-    onSelectColor(color);
-  };
 
   const handleStart = () => {
     GameAudio.play('click');
