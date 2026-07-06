@@ -10,6 +10,11 @@ export default function MenuBackground({ shipColor = 'blue' }) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
+    // Set initial canvas dimensions to match window viewport on mount.
+    // This prevents the first handleResize execution from scaling coordinates out of bounds.
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
     const nodes = [];
     const nodeCount = 130;
     for (let i = 0; i < nodeCount; i++) {
