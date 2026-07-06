@@ -4,6 +4,15 @@ import { getWordForEnemy } from '../game/words';
 import GameHUD from './GameHUD';
 import { SKILLS_DB } from './SkillsData';
 
+const getDeterministicIndex = (str, length) => {
+  if (!str || length <= 0) return 0;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash) % length;
+};
+
 export default function GameCanvas({
   username,
   shipColor,
@@ -84,7 +93,8 @@ export default function GameCanvas({
     bossShieldTime: 0,
     bossShieldHealth: 0,
     bossShieldsCount: 0,
-    shieldClaims: []
+    shieldClaims: [],
+    players: players || []
   });
 
   const [hudState, setHudState] = useState({
@@ -180,6 +190,7 @@ export default function GameCanvas({
   useEffect(() => {
     if (isMultiplayer && players) {
       const state = stateRef.current;
+      state.players = players; // Keep ref updated for loop closures
 
       // Animate leaving ships for players who are no longer in the list
       const currentSocketIds = players.map(p => p.socketId);
@@ -211,12 +222,15 @@ export default function GameCanvas({
         if (remainingColors.length > 0) {
           state.enemies.forEach(enemy => {
             if (!remainingColors.includes(enemy.color)) {
-              const newColor = remainingColors[Math.floor(Math.random() * remainingColors.length)];
+              // Deterministic selection based on enemy id so all clients align
+              const cIndex = getDeterministicIndex(enemy.id, remainingColors.length);
+              const newColor = remainingColors[cIndex];
               enemy.color = newColor;
               if (enemy.wordQueue && enemy.wordQueue.length > 0) {
-                enemy.wordQueue.forEach(qItem => {
+                enemy.wordQueue.forEach((qItem, qIdx) => {
                   if (qItem && typeof qItem === 'object') {
-                    qItem.color = newColor;
+                    const qIndex = getDeterministicIndex(enemy.id + '-' + qIdx, remainingColors.length);
+                    qItem.color = remainingColors[qIndex];
                   }
                 });
               }
@@ -226,7 +240,8 @@ export default function GameCanvas({
           if (state.bossObj && state.bossObj.words) {
             state.bossObj.words.forEach(w => {
               if (!remainingColors.includes(w.color)) {
-                w.color = remainingColors[Math.floor(Math.random() * remainingColors.length)];
+                const wIndex = getDeterministicIndex(w.id, remainingColors.length);
+                w.color = remainingColors[wIndex];
               }
             });
           }
@@ -271,6 +286,7 @@ export default function GameCanvas({
       try {
         const data = JSON.parse(event.data);
         const state = stateRef.current;
+        const players = state.players || [];
 
         switch (data.type) {
           case 'ROOM_PLAYERS_UPDATE': {
@@ -978,6 +994,8 @@ export default function GameCanvas({
   };
 
   const getShipTargetX = (socketId, screenWidth) => {
+    const state = stateRef.current;
+    const players = state.players || [];
     if (!isMultiplayer || !players || players.length === 0) {
       return screenWidth / 2;
     }
@@ -1347,6 +1365,7 @@ export default function GameCanvas({
 
     if (state.isPaused) return;
 
+    const players = state.players || [];
     const isHost = !isMultiplayer || (players.find(p => p.socketId === socket?.id)?.isHost);
 
     // Gradual health regeneration over time (2.5 HP per second)
@@ -2116,6 +2135,7 @@ export default function GameCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return;
     
+    const players = state.players || [];
     // Only spawn once per prime level!
     if (state.enemies.some(e => e.type === 'anomaly')) return;
     
@@ -2205,6 +2225,7 @@ export default function GameCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const players = state.players || [];
     const spawnCount = Math.min(
       Math.random() < 0.6 ? 1 : 2, 
       state.waveTotalToSpawn - state.waveSpawnedCount
@@ -2419,6 +2440,7 @@ export default function GameCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const players = state.players || [];
     // Generate boss sequence words
     // Co-op boss contains cycling colored words
     const wordCount = 3 + Math.floor(state.wave / 2);
@@ -2493,6 +2515,7 @@ export default function GameCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const players = state.players || [];
     let miniBossName = 'AEGIS VINDICATOR';
     let miniBossColor = 'white';
 
@@ -2598,6 +2621,7 @@ export default function GameCanvas({
     const state = stateRef.current;
     if (!state.bossObj) return;
 
+    const players = state.players || [];
     const bulletId = Math.random().toString(36).substring(2, 9);
     const alphabet = 'abcdefghijklmnopqrstuvwxyz';
     const letter = alphabet[Math.floor(Math.random() * alphabet.length)];
@@ -2688,6 +2712,7 @@ export default function GameCanvas({
     const canvas = canvasRef.current;
     if (!canvas || !state.bossObj) return;
 
+    const players = state.players || [];
     const spawnLeft = Math.random() < 0.5;
     const x = spawnLeft ? state.bossObj.x - 80 : state.bossObj.x + 80;
 
@@ -2886,6 +2911,7 @@ export default function GameCanvas({
     const state = stateRef.current;
     if (state.waveState !== 'boss_fight' || !state.bossObj) return;
 
+    const players = state.players || [];
     const boss = state.bossObj;
     const shieldIndex = boss.words.findIndex(w => w.id === completedEnemyId);
     
@@ -3000,6 +3026,7 @@ export default function GameCanvas({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const state = stateRef.current;
+    const players = state.players || [];
 
     // Apply Screen Shake
     ctx.save();
