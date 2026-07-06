@@ -1147,6 +1147,34 @@ export default function GameCanvas({
     return getShipX(p.position, screenWidth);
   };
 
+  const getActivePlayerColors = () => {
+    const state = stateRef.current;
+    const players = state.players || [];
+    if (!isMultiplayer || !players || players.length === 0) {
+      return [shipColor];
+    }
+    const activeColors = [];
+    players.forEach(p => {
+      const isSelf = p.socketId === socket?.id;
+      if (isSelf) {
+        if (state.health > 0 && !state.isReviving) {
+          activeColors.push(p.color || shipColor);
+        }
+      } else {
+        const mate = state.teammates.find(m => m.socketId === p.socketId);
+        const health = mate ? mate.health : 100;
+        const isReviving = mate ? mate.isReviving : false;
+        if (health > 0 && !isReviving) {
+          activeColors.push(p.color);
+        }
+      }
+    });
+    if (activeColors.length === 0) {
+      return players.map(p => p.color).filter(Boolean);
+    }
+    return activeColors;
+  };
+
   const getLocalShipX = (screenWidth) => {
     if (isMultiplayer && socket?.id && stateRef.current.playerPositions[socket.id] !== undefined) {
       return stateRef.current.playerPositions[socket.id];
@@ -1529,6 +1557,39 @@ export default function GameCanvas({
     const players = state.players || [];
     const isHost = !isMultiplayer || (players.find(p => p.socketId === socket?.id)?.isHost);
 
+    // Shift colors of enemies targeted at dead/reviving players to active players
+    if (isMultiplayer) {
+      const activeColors = getActivePlayerColors();
+      if (activeColors.length > 0) {
+        state.enemies.forEach(enemy => {
+          if (enemy.type !== 'boss_shield' && enemy.color && !activeColors.includes(enemy.color)) {
+            const cIndex = getDeterministicIndex(enemy.id, activeColors.length);
+            const newColor = activeColors[cIndex];
+            enemy.color = newColor;
+            
+            if (enemy.wordQueue && enemy.wordQueue.length > 0) {
+              enemy.wordQueue.forEach((qItem, qIdx) => {
+                if (qItem && typeof qItem === 'object') {
+                  const qIndex = getDeterministicIndex(enemy.id + '-' + qIdx, activeColors.length);
+                  qItem.color = activeColors[qIndex];
+                }
+              });
+            }
+          }
+        });
+        
+        // Also shift active boss words if active boss word color doesn't match active players
+        if (state.bossObj && state.bossObj.words) {
+          state.bossObj.words.forEach(w => {
+            if (w.color && !activeColors.includes(w.color)) {
+              const wIndex = getDeterministicIndex(w.id, activeColors.length);
+              w.color = activeColors[wIndex];
+            }
+          });
+        }
+      }
+    }
+
     // Update local revive timer
     if (state.isReviving && state.reviveTimeRemaining > 0) {
       state.reviveTimeRemaining -= 1;
@@ -1884,7 +1945,8 @@ export default function GameCanvas({
               const normalizedDecoys = newDecoys.map(d => ({
                 ...d,
                 x: d.x / canvas.width,
-                y: d.y / canvas.height
+                y: d.y / canvas.height,
+                speed: d.speed / canvas.height
               }));
               socket.send(JSON.stringify({
                 type: 'SPAWN_ENEMIES',
@@ -2546,7 +2608,8 @@ export default function GameCanvas({
       const normalizedEnemy = {
         ...anomalyEnemy,
         x: anomalyEnemy.x / canvas.width,
-        y: anomalyEnemy.y / canvas.height
+        y: anomalyEnemy.y / canvas.height,
+        speed: anomalyEnemy.speed / canvas.height
       };
       socket.send(JSON.stringify({
         type: 'SPAWN_ENEMIES',
@@ -2593,7 +2656,8 @@ export default function GameCanvas({
       const normalizedMeteors = newMeteors.map(m => ({
         ...m,
         x: m.x / canvas.width,
-        y: m.y / canvas.height
+        y: m.y / canvas.height,
+        speed: m.speed / canvas.height
       }));
       socket.send(JSON.stringify({
         type: 'SPAWN_ENEMIES',
@@ -2660,10 +2724,10 @@ export default function GameCanvas({
         const totalWords = Math.random() < 0.5 ? 2 : 3;
         for (let w = 0; w < totalWords - 1; w++) {
           let wColor = color;
-          if (isMultiplayer && players && players.length > 0) {
-            const colors = players.map(p => p.color).filter(Boolean);
-            if (colors.length > 0) {
-              wColor = colors[Math.floor(Math.random() * colors.length)];
+          if (isMultiplayer) {
+            const activeColors = getActivePlayerColors();
+            if (activeColors.length > 0) {
+              wColor = activeColors[Math.floor(Math.random() * activeColors.length)];
             }
           } else {
             wColor = 'gold';
@@ -2679,28 +2743,27 @@ export default function GameCanvas({
       const x = canvas.width * 0.25 + Math.random() * (canvas.width * 0.5);
       
       // In co-op, assign player color targets using a non-predictive Shuffled Bag approach.
-      // This guarantees an equal balance of spawns across teammates over a small window without being predictive.
+      // This guarantees an equal balance of spawns across active teammates over a small window.
       let color;
       if (isMultiplayer) {
         color = shipColor;
-        if (players && players.length > 0) {
-          const colors = players.map(p => p.color).filter(Boolean);
-          if (colors.length > 0) {
-            if (!state.colorSpawnBag || state.colorSpawnBag.length === 0) {
-              const tempBag = [];
-              const repetitions = colors.length === 2 ? 3 : 2; // For 2P: 3 each (6 total). For 3P: 2 each (6 total).
-              for (let r = 0; r < repetitions; r++) {
-                tempBag.push(...colors);
-              }
-              // Fisher-Yates Shuffle
-              for (let j = tempBag.length - 1; j > 0; j--) {
-                const k = Math.floor(Math.random() * (j + 1));
-                [tempBag[j], tempBag[k]] = [tempBag[k], tempBag[j]];
-              }
-              state.colorSpawnBag = tempBag;
+        const activeColors = getActivePlayerColors();
+        if (activeColors.length > 0) {
+          const hasInactiveColor = state.colorSpawnBag && state.colorSpawnBag.some(c => !activeColors.includes(c));
+          if (hasInactiveColor || !state.colorSpawnBag || state.colorSpawnBag.length === 0) {
+            const tempBag = [];
+            const repetitions = activeColors.length === 2 ? 3 : 2;
+            for (let r = 0; r < repetitions; r++) {
+              tempBag.push(...activeColors);
             }
-            color = state.colorSpawnBag.pop() || shipColor;
+            // Fisher-Yates Shuffle
+            for (let j = tempBag.length - 1; j > 0; j--) {
+              const k = Math.floor(Math.random() * (j + 1));
+              [tempBag[j], tempBag[k]] = [tempBag[k], tempBag[j]];
+            }
+            state.colorSpawnBag = tempBag;
           }
+          color = state.colorSpawnBag.pop() || shipColor;
         }
       } else {
         if (type === 'drone') color = 'orange';
@@ -2762,9 +2825,10 @@ export default function GameCanvas({
 
     if (isMultiplayer && socket) {
       const normalizedEnemies = newEnemies.map(e => ({
-        ...e,
-        x: e.x / canvas.width,
-        y: e.y / canvas.height
+          ...e,
+          x: e.x / canvas.width,
+          y: e.y / canvas.height,
+          speed: e.speed / canvas.height
       }));
       socket.send(JSON.stringify({
         type: 'SPAWN_ENEMIES',
@@ -3188,7 +3252,8 @@ export default function GameCanvas({
       const normalizedMinion = {
         ...minion,
         x: minion.x / canvas.width,
-        y: minion.y / canvas.height
+        y: minion.y / canvas.height,
+        speed: minion.speed / canvas.height
       };
       socket.send(JSON.stringify({
         type: 'SPAWN_ENEMIES',
