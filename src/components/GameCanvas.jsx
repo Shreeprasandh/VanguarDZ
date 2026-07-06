@@ -305,6 +305,21 @@ export default function GameCanvas({
         state.health = meInState.health;
       }
 
+      // Check if all players are dead or reviving (game over)
+      if (state.waveState !== 'victory' && !state.isLocalGameOver) {
+        const alivePlayersCount = mates.filter(m => m.health > 0 && !m.isReviving).length;
+        if (alivePlayersCount === 0) {
+          if (isMultiplayer && socket) {
+            socket.send(JSON.stringify({
+              type: 'GAME_OVER',
+              finalScore: state.score,
+              waveReached: state.wave
+            }));
+          }
+          triggerGameOver(state.score, state.wave);
+        }
+      }
+
       setHudState(prev => ({
         ...prev,
         teammates: mates
@@ -474,24 +489,36 @@ export default function GameCanvas({
           case 'SYNC_BOSS_PHASE': {
             // Start boss fight phase on clients
             state.waveState = 'boss_fight';
-            state.bossObj = {
-              id: data.bossId || 'boss',
-              type: data.bossType || 'boss',
-              name: data.bossName || 'BOSS',
-              color: data.bossColor || 'purple',
-              x: window.innerWidth / 2,
-              y: 120,
-              width: data.bossWidth || 180,
-              height: data.bossHeight || 100,
-              health: data.bossHealth || 100,
-              maxHealth: 100,
-              words: data.bossWords || [],
-              phase: data.phase,
-              shootTimer: 120
-            };
+            if (!state.bossObj) {
+              state.bossObj = {
+                id: data.bossId || 'boss',
+                type: data.bossType || 'boss',
+                name: data.bossName || 'BOSS',
+                color: data.bossColor || 'purple',
+                x: canvas.width / 2,
+                y: 120,
+                width: data.bossWidth || 180,
+                height: data.bossHeight || 100,
+                health: data.bossHealth || 100,
+                maxHealth: 100,
+                words: data.bossWords || [],
+                phase: data.phase,
+                shootTimer: 120
+              };
+            } else {
+              state.bossObj.id = data.bossId !== undefined ? data.bossId : state.bossObj.id;
+              state.bossObj.type = data.bossType !== undefined ? data.bossType : state.bossObj.type;
+              state.bossObj.name = data.bossName !== undefined ? data.bossName : state.bossObj.name;
+              state.bossObj.color = data.bossColor !== undefined ? data.bossColor : state.bossObj.color;
+              state.bossObj.width = data.bossWidth !== undefined ? data.bossWidth : state.bossObj.width;
+              state.bossObj.height = data.bossHeight !== undefined ? data.bossHeight : state.bossObj.height;
+              state.bossObj.health = data.bossHealth !== undefined ? data.bossHealth : state.bossObj.health;
+              state.bossObj.words = data.bossWords !== undefined ? data.bossWords : state.bossObj.words;
+              state.bossObj.phase = data.phase !== undefined ? data.phase : state.bossObj.phase;
+            }
             // Clear any active boss shields to prevent duplicates
             state.enemies = state.enemies.filter(e => e.type !== 'boss_shield');
-            loadBossWordsAsEnemies(data.bossWords);
+            loadBossWordsAsEnemies(data.bossWords || state.bossObj.words);
             break;
           }
 
@@ -3086,7 +3113,7 @@ export default function GameCanvas({
   const loadBossWordsAsEnemies = (bossWords) => {
     const state = stateRef.current;
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !bossWords || !Array.isArray(bossWords)) return;
 
     // Add active boss word into standard enemy typing loop
     const activeWord = bossWords.find(w => w.active);
@@ -3371,6 +3398,7 @@ export default function GameCanvas({
             finalScore: state.score,
             waveReached: state.wave
           }));
+          triggerGameOver(state.score, state.wave);
         }
       } else {
         triggerGameOver(state.score, state.wave);

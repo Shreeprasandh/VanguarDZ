@@ -539,6 +539,7 @@ wss.on('connection', (ws) => {
               type: 'SYNC_POSITIONS',
               enemies: data.enemies,
               bullets: data.bullets,
+              boss: data.boss,
               hostId: socketId
             }, socketId);
           }
