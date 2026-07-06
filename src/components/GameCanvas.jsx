@@ -1062,6 +1062,29 @@ export default function GameCanvas({
     }
   };
 
+  const triggerTypoEffect = () => {
+    const state = stateRef.current;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const px = getLocalShipX(canvas.width);
+    const py = canvas.height - 80 - 22;
+    
+    const count = Math.random() < 0.5 ? 1 : 2;
+    for (let i = 0; i < count; i++) {
+      state.particles.push({
+        x: px,
+        y: py,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: -0.2 - Math.random() * 0.3,
+        size: 1.0 + Math.random() * 1.0,
+        color: 'rgba(0, 0, 0, 0.45)',
+        alpha: 0.5,
+        life: 25 + Math.random() * 15
+      });
+    }
+  };
+
   const createExplosion = (x, y, color, particleCount = 15, isBig = false) => {
     const state = stateRef.current;
     const count = isBig ? particleCount * 2 : particleCount;
@@ -1182,6 +1205,7 @@ export default function GameCanvas({
           }
         } else {
           enemy.typos = (enemy.typos || 0) + 1;
+          triggerTypoEffect();
           if (state.shieldActive) {
             state.shieldActive = false; // absorb mistake
             createExplosion(enemy.x, enemy.y, '#a3e635', 10);
@@ -1229,6 +1253,7 @@ export default function GameCanvas({
       }
 
       // General typo outside active target
+      triggerTypoEffect();
       if (state.shieldActive) {
         state.shieldActive = false;
       } else {
@@ -3388,12 +3413,22 @@ export default function GameCanvas({
     // Draw Lasers
     state.lasers.forEach(laser => {
       ctx.save();
-      ctx.shadowBlur = 10;
+      // Outer colored glow beam
+      ctx.shadowBlur = 4;
       ctx.shadowColor = laser.color;
       ctx.strokeStyle = laser.color;
-      ctx.globalAlpha = laser.alpha;
-      ctx.lineWidth = 3.0;
+      ctx.globalAlpha = laser.alpha * 0.75;
+      ctx.lineWidth = 2.0;
 
+      ctx.beginPath();
+      ctx.moveTo(laser.fromX, laser.fromY);
+      ctx.lineTo(laser.toX, laser.toY);
+      ctx.stroke();
+
+      // Very thin elegant white core (hardly noticeable but adds crisp detail)
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 0.7;
+      ctx.shadowBlur = 0;
       ctx.beginPath();
       ctx.moveTo(laser.fromX, laser.fromY);
       ctx.lineTo(laser.toX, laser.toY);
@@ -4182,7 +4217,13 @@ export default function GameCanvas({
     if (state.bossObj && state.bossObj.name === 'THERMOBARIC DEVASTATOR') {
       const b = state.bossObj;
       if (b.targetFireLane) {
-        const laneX = getShipX(b.targetFireLane, canvas.width);
+        let laneX = getShipX(b.targetFireLane, canvas.width);
+        if (isMultiplayer && players && players.length > 0) {
+          const targetPlayer = players.find(p => p.position === b.targetFireLane);
+          if (targetPlayer) {
+            laneX = state.playerPositions[targetPlayer.socketId] || getShipTargetX(targetPlayer.socketId, canvas.width);
+          }
+        }
         ctx.save();
         if (b.fireWarningTime > 0) {
           // Pulsing warning overlay
