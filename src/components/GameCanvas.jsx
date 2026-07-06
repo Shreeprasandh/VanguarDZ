@@ -106,8 +106,13 @@ export default function GameCanvas({
     teammates: []
   });
 
+  const initializedRef = useRef(false);
+
   // Load initial wave and score on mount (for persistent wave progression)
   useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
     const waveVal = initialWave || 1;
     const scoreVal = initialScore || 0;
     
@@ -2877,6 +2882,7 @@ export default function GameCanvas({
     const nextWaveNum = state.wave + 1;
     
     state.wave = nextWaveNum;
+    onScoreUpdate(state.score, nextWaveNum); // Update parent wave immediately
     state.waveState = 'intro';
     state.waveTransitionTimer = 180;
     state.enemies = [];
