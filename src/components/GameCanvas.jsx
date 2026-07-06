@@ -94,7 +94,9 @@ export default function GameCanvas({
     bossShieldHealth: 0,
     bossShieldsCount: 0,
     shieldClaims: [],
-    players: players || []
+    players: players || [],
+    isReviving: false,
+    reviveTimeRemaining: 0
   });
 
   const [hudState, setHudState] = useState({
@@ -466,6 +468,30 @@ export default function GameCanvas({
                 state.flashFrame = 6;
                 GameAudio.play('explosionPlayer');
               }
+            }
+            break;
+          }
+
+          case 'PLAYER_DOWN': {
+            const mate = state.teammates.find(m => m.socketId === data.playerId);
+            if (mate) {
+              mate.health = 0;
+              mate.isReviving = true;
+              mate.reviveTimeRemaining = data.reviveTime * 60; // 15 * 60 = 900 frames
+            }
+            break;
+          }
+
+          case 'PLAYER_REVIVED': {
+            const mate = state.teammates.find(m => m.socketId === data.playerId);
+            if (mate) {
+              mate.health = 100;
+              mate.isReviving = false;
+              mate.reviveTimeRemaining = 0;
+              // Minimal recovery ring & green explosion at teammate's ship position
+              const mx = state.playerPositions[mate.socketId] || getShipTargetX(mate.socketId, window.innerWidth);
+              createExplosion(mx, window.innerHeight - 80, '#22c55e', 14);
+              GameAudio.play('shield_activate');
             }
             break;
           }
@@ -1075,7 +1101,7 @@ export default function GameCanvas({
       return;
     }
 
-    if (state.isLocalGameOver || state.isPaused) return;
+    if (state.isLocalGameOver || state.isPaused || state.health <= 0) return;
     if (state.jammedTimer && state.jammedTimer > 0) return; // Controls jammed by anomaly pulsar
 
     const key = e.key.toLowerCase();
@@ -1370,6 +1396,58 @@ export default function GameCanvas({
 
     const players = state.players || [];
     const isHost = !isMultiplayer || (players.find(p => p.socketId === socket?.id)?.isHost);
+
+    // Update local revive timer
+    if (state.isReviving && state.reviveTimeRemaining > 0) {
+      state.reviveTimeRemaining -= 1;
+      if (state.reviveTimeRemaining <= 0) {
+        state.isReviving = false;
+        state.health = 100;
+        
+        // Notify others of full recovery
+        if (isMultiplayer && socket) {
+          socket.send(JSON.stringify({
+            type: 'PLAYER_REVIVED',
+            playerId: socket.id
+          }));
+          socket.send(JSON.stringify({
+            type: 'PLAYER_HIT',
+            playerId: socket.id,
+            health: 100
+          }));
+        }
+        
+        // Trigger a minimal green revival pulse ring
+        state.reviveRingRadius = 1;
+        state.reviveRingActive = true;
+        const myX = getLocalShipX(canvas.width);
+        createExplosion(myX, canvas.height - 80, '#22c55e', 14);
+        GameAudio.play('shield_activate');
+        
+        setHudState(prev => ({ ...prev, health: 100 }));
+      }
+    }
+
+    // Update teammate revive timers
+    if (state.teammates) {
+      state.teammates.forEach(m => {
+        if (m.isReviving && m.reviveTimeRemaining > 0) {
+          m.reviveTimeRemaining -= 1;
+          if (m.reviveTimeRemaining <= 0) {
+            m.isReviving = false;
+            m.health = 100;
+          }
+        }
+      });
+    }
+
+    // Update local revive ring
+    if (state.reviveRingActive) {
+      state.reviveRingRadius += 2.5; // expand speed
+      if (state.reviveRingRadius > 60) {
+        state.reviveRingActive = false;
+      }
+    }
 
     // Gradual health regeneration over time (2.5 HP per second)
     if (state.health < 100 && state.health > 0) {
@@ -2007,7 +2085,18 @@ export default function GameCanvas({
         const dmg = enemy.type === 'kamikaze' ? 35 : 20;
         const explColor = enemy.type === 'kamikaze' ? '#ef4444' : '#ff3366';
         
-        takeDamage(dmg);
+        if (isMultiplayer && players && players.length > 0) {
+          const myPlayer = players.find(p => p.socketId === socket?.id);
+          const myColor = myPlayer ? myPlayer.color : shipColor;
+          
+          if (enemy.color === myColor) {
+            takeDamage(dmg); // Direct hit!
+          } else {
+            takeDamage(dmg * 0.5); // 50% splash damage to teammate!
+          }
+        } else {
+          takeDamage(dmg);
+        }
         // Destroy enemy
         state.enemies = state.enemies.filter(e => e.id !== enemy.id);
         handleEnemyCompletion(enemy.id);
@@ -2080,7 +2169,27 @@ export default function GameCanvas({
           state.bullets = state.bullets.filter(b => b.id !== bullet.id);
         } else {
           // Bullet hit a ship -> 50 damage (2-hit survival limit)
-          takeDamage(50);
+          if (isMultiplayer && players && players.length > 0) {
+            let closestPlayer = null;
+            let minDistance = Infinity;
+            players.forEach(p => {
+              const shipTargetX = getShipX(p.position, canvas.width);
+              const dist = Math.abs(bullet.x - shipTargetX);
+              if (dist < minDistance) {
+                minDistance = dist;
+                closestPlayer = p;
+              }
+            });
+            
+            const myPlayer = players.find(p => p.socketId === socket?.id);
+            if (closestPlayer && myPlayer && closestPlayer.socketId === myPlayer.socketId) {
+              takeDamage(50); // Direct hit!
+            } else {
+              takeDamage(25); // Teammate splash damage!
+            }
+          } else {
+            takeDamage(50);
+          }
           state.bullets = state.bullets.filter(b => b.id !== bullet.id);
         }
       }
@@ -2802,6 +2911,7 @@ export default function GameCanvas({
   // Co-op gameplay: take damage
   const takeDamage = (amount) => {
     const state = stateRef.current;
+    if (state.health <= 0) return; // Ignore damage if already dead/reviving!
     
     // Check if active boss shield absorbs the hit
     if (state.bossShieldActive && state.bossShieldHealth > 0) {
@@ -2850,11 +2960,32 @@ export default function GameCanvas({
     // Check game over
     if (state.health <= 0) {
       if (isMultiplayer && socket) {
-        socket.send(JSON.stringify({
-          type: 'GAME_OVER',
-          finalScore: state.score,
-          waveReached: state.wave
-        }));
+        // Find if there's at least one teammate with health > 0 and NOT reviving
+        const aliveTeammates = state.teammates.filter(m => m.socketId !== socket.id && m.health > 0 && !m.isReviving);
+        if (aliveTeammates.length > 0) {
+          // Enter revive mode!
+          state.health = 0;
+          state.isReviving = true;
+          state.reviveTimeRemaining = 900; // 15 seconds (15 * 60)
+          
+          // Minimal death sparks (gray and orange, not too flashy)
+          const myX = getLocalShipX(window.innerWidth);
+          createExplosion(myX, window.innerHeight - 80, '#9ca3af', 8); // gray
+          createExplosion(myX, window.innerHeight - 80, '#f97316', 6);  // orange
+          
+          socket.send(JSON.stringify({
+            type: 'PLAYER_DOWN',
+            playerId: socket.id,
+            reviveTime: 15
+          }));
+        } else {
+          // No alive teammates left -> Game Over!
+          socket.send(JSON.stringify({
+            type: 'GAME_OVER',
+            finalScore: state.score,
+            waveReached: state.wave
+          }));
+        }
       } else {
         triggerGameOver(state.score, state.wave);
       }
@@ -4088,12 +4219,27 @@ export default function GameCanvas({
       ? players.find(p => p.socketId === socket?.id)?.position || 'center' 
       : 'center';
 
-    const renderShip = (x, y, color, labelText) => {
+    const renderShip = (x, y, color, labelText, isDead = false, reviveTimer = 0) => {
       ctx.save();
       ctx.translate(x, y);
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = getColorHex(color);
-      ctx.strokeStyle = getColorHex(color);
+
+      const getRgbFromHex = (hex) => {
+        const cleanHex = hex.replace('#', '');
+        const r = parseInt(cleanHex.substring(0, 2), 16);
+        const g = parseInt(cleanHex.substring(2, 4), 16);
+        const b = parseInt(cleanHex.substring(4, 6), 16);
+        return `${r}, ${g}, ${b}`;
+      };
+
+      if (isDead) {
+        ctx.globalAlpha = 0.5;
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#4b5563'; // Gray offline color
+      } else {
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = getColorHex(color);
+        ctx.strokeStyle = getColorHex(color);
+      }
       ctx.lineWidth = 2.5;
 
       // Draw procedural player design based on color - Modern Spacecraft
@@ -4115,7 +4261,7 @@ export default function GameCanvas({
       // Secondary detailed wing panel stripes
       ctx.save();
       const currentAlpha = ctx.globalAlpha;
-      const resolvedColor = getColorHex(color);
+      const resolvedColor = isDead ? '#4b5563' : getColorHex(color);
       ctx.strokeStyle = resolvedColor;
       ctx.globalAlpha = 0.35 * currentAlpha;
       ctx.lineWidth = 1.0;
@@ -4135,18 +4281,12 @@ export default function GameCanvas({
       ctx.restore();
 
       // Glowing Cockpit Glass
-      const getRgbFromHex = (hex) => {
-        const cleanHex = hex.replace('#', '');
-        const r = parseInt(cleanHex.substring(0, 2), 16);
-        const g = parseInt(cleanHex.substring(2, 4), 16);
-        const b = parseInt(cleanHex.substring(4, 6), 16);
-        return `${r}, ${g}, ${b}`;
-      };
-
-      ctx.fillStyle = `rgba(${getRgbFromHex(resolvedColor)}, ${0.45 * currentAlpha})`;
-      ctx.beginPath();
-      ctx.ellipse(0, -4, 3, 5, 0, 0, Math.PI * 2);
-      ctx.fill();
+      if (!isDead) {
+        ctx.fillStyle = `rgba(${getRgbFromHex(resolvedColor)}, ${0.45 * currentAlpha})`;
+        ctx.beginPath();
+        ctx.ellipse(0, -4, 3, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       // Side Laser Cannons
       ctx.strokeStyle = resolvedColor;
@@ -4157,19 +4297,43 @@ export default function GameCanvas({
       ctx.stroke();
 
       // Draw thruster fire particles procedurally
-      ctx.fillStyle = `rgba(${getRgbFromHex(resolvedColor)}, ${0.3 * currentAlpha})`;
-      ctx.beginPath();
-      ctx.moveTo(-6, 7);
-      ctx.lineTo(0, 7 + Math.random() * 15);
-      ctx.lineTo(6, 7);
-      ctx.closePath();
-      ctx.fill();
+      if (!isDead) {
+        ctx.fillStyle = `rgba(${getRgbFromHex(resolvedColor)}, ${0.3 * currentAlpha})`;
+        ctx.beginPath();
+        ctx.moveTo(-6, 7);
+        ctx.lineTo(0, 7 + Math.random() * 15);
+        ctx.lineTo(6, 7);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // Procedural smoke puff emitter for damaged/dead ships (not too flashy)
+        if (Math.random() < 0.08) {
+          state.particles.push({
+            x: x + (Math.random() - 0.5) * 12,
+            y: y - 10,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: -0.5 - Math.random() * 0.5,
+            size: 1.2 + Math.random() * 1.5,
+            color: 'rgba(100, 116, 139, 0.4)', // Slate smoke gray
+            alpha: 0.5,
+            life: 20 + Math.random() * 15
+          });
+        }
+      }
 
       // Draw username under the ship small
       ctx.fillStyle = `rgba(138, 143, 163, ${currentAlpha})`;
       ctx.font = '400 11px Outfit, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(labelText, 0, 30);
+
+      // Draw countdown timer under name at 50% opacity
+      if (isDead && reviveTimer > 0) {
+        const secLeft = Math.ceil(reviveTimer / 60);
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.5)'; // 50% opacity red
+        ctx.font = '500 10px Orbitron, sans-serif';
+        ctx.fillText(`REVIVING: ${secLeft}S`, 0, 44);
+      }
 
       // Draw tactical shield bubble if active for this player
       if (labelText.includes('(You)') && state.shieldActive) {
@@ -4185,7 +4349,7 @@ export default function GameCanvas({
       // Draw subtle passive shield sparks based on defense percent
       if (labelText.includes('(You)') && state.streak >= 10) {
         const defLvl = state.streak >= 50 ? 50 : Math.floor(state.streak / 10) * 10;
-        const sparkOpacity = (defLvl / 50) * 0.16 + 0.04; // Very faint, max 0.20 opacity
+        const sparkOpacity = (defLvl / 50) * 0.16 + 0.04;
         const sparkCount = Math.floor(defLvl / 10);
         
         ctx.strokeStyle = `rgba(255, 255, 255, ${sparkOpacity})`;
@@ -4261,12 +4425,13 @@ export default function GameCanvas({
           }
         }
         
-        // Draw only if player has not died
         const mateState = state.teammates.find(m => m.socketId === p.socketId);
-        if (!mateState || mateState.health > 0) {
-          const suffix = p.socketId === socket?.id ? ' (You)' : '';
-          renderShip(sx, sy, p.color || shipColor, p.username + suffix);
-        }
+        const isSelf = p.socketId === socket?.id;
+        const myHealth = isSelf ? state.health : (mateState ? mateState.health : 100);
+        const timer = isSelf ? state.reviveTimeRemaining : (mateState ? mateState.reviveTimeRemaining : 0);
+        
+        const suffix = isSelf ? ' (You)' : '';
+        renderShip(sx, sy, p.color || shipColor, p.username + suffix, myHealth <= 0, timer);
       });
 
       // Draw leaving ships flying out of the screen
@@ -4492,7 +4657,45 @@ export default function GameCanvas({
       ctx.restore();
     }
 
+    // Draw local revive recovery ring
+    if (state.reviveRingActive) {
+      const myX = getLocalShipX(canvas.width);
+      const myY = canvas.height - 80;
+      ctx.save();
+      ctx.strokeStyle = `rgba(34, 197, 94, ${1 - state.reviveRingRadius / 60})`;
+      ctx.lineWidth = 2.0;
+      ctx.beginPath();
+      ctx.arc(myX, myY, state.reviveRingRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
 
+    // Draw full-screen revive dim overlay & central countdown
+    if (state.isReviving && state.reviveTimeRemaining > 0) {
+      ctx.save();
+      // Draw 50% opacity full screen dark overlay
+      ctx.fillStyle = 'rgba(10, 10, 15, 0.5)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw a clean system message and countdown in the center
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
+      ctx.font = '900 14px Orbitron, sans-serif';
+      ctx.fillText('CRITICAL DAMAGE - SYSTEM RECOVERY IN PROGRESS', canvas.width / 2, canvas.height * 0.45);
+      
+      const secLeft = Math.ceil(state.reviveTimeRemaining / 60);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 36px Orbitron, sans-serif';
+      ctx.fillText(secLeft.toString(), canvas.width / 2, canvas.height * 0.52);
+      
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.font = '400 11px Outfit, sans-serif';
+      ctx.fillText('STANDBY PILOT - WEAPONS OFFLINE', canvas.width / 2, canvas.height * 0.58);
+      
+      ctx.restore();
+    }
 
     ctx.restore(); // Pop Screen Shake
   };

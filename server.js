@@ -565,6 +565,27 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case 'PLAYER_DOWN': {
+          if (player.roomId) {
+            sendToRoom(player.roomId, {
+              type: 'PLAYER_DOWN',
+              playerId: data.playerId,
+              reviveTime: data.reviveTime
+            });
+          }
+          break;
+        }
+
+        case 'PLAYER_REVIVED': {
+          if (player.roomId) {
+            sendToRoom(player.roomId, {
+              type: 'PLAYER_REVIVED',
+              playerId: data.playerId
+            });
+          }
+          break;
+        }
+
         case 'GAME_OVER': {
           if (player.roomId) {
             sendToRoom(player.roomId, {
