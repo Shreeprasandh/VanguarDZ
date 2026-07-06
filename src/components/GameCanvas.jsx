@@ -627,6 +627,7 @@ export default function GameCanvas({
             }
             setHudState(prev => ({ 
               ...prev, 
+              wave: data.wave,
               health: state.health,
               teammates: state.teammates ? [...state.teammates] : []
             }));
@@ -1474,9 +1475,9 @@ export default function GameCanvas({
       }
     }
 
-    // Gradual health regeneration over time (2.5 HP per second)
+    // Gradual health regeneration over time (2.0 HP per second)
     if (state.health < 100 && state.health > 0) {
-      state.health = Math.min(100, state.health + (2.5 / 60)); // 2.5 HP/s at 60fps
+      state.health = Math.min(100, state.health + (2.0 / 60)); // 2.0 HP/s at 60fps
       state.regenHudTimer = (state.regenHudTimer || 0) + 1;
       if (state.regenHudTimer >= 15) {
         state.regenHudTimer = 0;
@@ -2000,28 +2001,35 @@ export default function GameCanvas({
         speedFactor = enemy.slowMultiplier || 0.5;
       }
 
-      enemy.y += enemy.speed * baseSpeedMultiplier * multiplayerDifficulty * speedFactor;
-      
-      // Meteor fiery trailing particle emission
       const pat = enemy.movementPattern || 'straight';
-      // Drone gentle horizontal sway (only if NOT straight)
-      if (enemy.type === 'drone' && pat !== 'straight' && speedFactor > 0) {
-        enemy.patternAge = (enemy.patternAge || 0) + 1;
-        enemy.x += Math.sin(enemy.patternAge * 0.04) * 0.65 * speedFactor;
-      }
+      if (!isHost) {
+        if (enemy.serverY !== undefined) {
+          // Progress the server authoritative target coordinate forward by the same speed/skills logic
+          const dy = enemy.speed * baseSpeedMultiplier * multiplayerDifficulty * speedFactor;
+          enemy.serverY += dy;
+          if (enemy.type === 'drone' && pat !== 'straight' && speedFactor > 0) {
+            enemy.patternAge = (enemy.patternAge || 0) + 1;
+            enemy.serverX += Math.sin(enemy.patternAge * 0.04) * 0.65 * speedFactor;
+          }
 
-      // Easing correction for multiplayer guests to prevent flickering/jittering
-      if (!isHost && enemy.serverY !== undefined) {
-        // Move the server authoritative target forward by the same speed/skills logic
-        const dy = enemy.speed * baseSpeedMultiplier * multiplayerDifficulty * speedFactor;
-        enemy.serverY += dy;
-        if (enemy.type === 'drone' && pat !== 'straight' && speedFactor > 0) {
-          enemy.serverX += Math.sin(enemy.patternAge * 0.04) * 0.65 * speedFactor;
+          // Ease the visual coordinate toward the moving predicted target smoothly
+          enemy.x += (enemy.serverX - enemy.x) * 0.15;
+          enemy.y += (enemy.serverY - enemy.y) * 0.15;
+        } else {
+          // Fallback if sync packet hasn't arrived yet
+          enemy.y += enemy.speed * baseSpeedMultiplier * multiplayerDifficulty * speedFactor;
+          if (enemy.type === 'drone' && pat !== 'straight' && speedFactor > 0) {
+            enemy.patternAge = (enemy.patternAge || 0) + 1;
+            enemy.x += Math.sin(enemy.patternAge * 0.04) * 0.65 * speedFactor;
+          }
         }
-
-        // Ease the visual coordinate toward the moving predicted target
-        enemy.x += (enemy.serverX - enemy.x) * 0.15;
-        enemy.y += (enemy.serverY - enemy.y) * 0.15;
+      } else {
+        // Host (or single player) authoritative physics
+        enemy.y += enemy.speed * baseSpeedMultiplier * multiplayerDifficulty * speedFactor;
+        if (enemy.type === 'drone' && pat !== 'straight' && speedFactor > 0) {
+          enemy.patternAge = (enemy.patternAge || 0) + 1;
+          enemy.x += Math.sin(enemy.patternAge * 0.04) * 0.65 * speedFactor;
+        }
       }
 
       // Drone subtle green trailing particles
@@ -2171,26 +2179,36 @@ export default function GameCanvas({
         bullet.vy = Math.sin(angle) * bullet.speed;
       }
 
-      if (bullet.vx !== undefined && bullet.vy !== undefined) {
-        bullet.x += bullet.vx * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
-        bullet.y += bullet.vy * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
-      } else {
-        bullet.y += bullet.speed * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
-      }
+      if (!isHost) {
+        if (bullet.serverY !== undefined) {
+          // Progress the server authoritative target coordinate forward by the same velocity and time-warp modifiers
+          if (bullet.vx !== undefined && bullet.vy !== undefined) {
+            bullet.serverX += bullet.vx * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+            bullet.serverY += bullet.vy * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+          } else {
+            bullet.serverY += bullet.speed * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+          }
 
-      // Easing correction for multiplayer guests to prevent flickering/jittering
-      if (!isHost && bullet.serverY !== undefined) {
-        // Move the server authoritative target forward by the same velocity and time-warp modifiers
-        if (bullet.vx !== undefined && bullet.vy !== undefined) {
-          bullet.serverX += bullet.vx * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
-          bullet.serverY += bullet.vy * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+          // Ease the visual coordinate toward the moving predicted target smoothly
+          bullet.x += (bullet.serverX - bullet.x) * 0.15;
+          bullet.y += (bullet.serverY - bullet.y) * 0.15;
         } else {
-          bullet.serverY += bullet.speed * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+          // Fallback if sync packet hasn't arrived yet
+          if (bullet.vx !== undefined && bullet.vy !== undefined) {
+            bullet.x += bullet.vx * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+            bullet.y += bullet.vy * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+          } else {
+            bullet.y += bullet.speed * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+          }
         }
-
-        // Ease the visual coordinate toward the moving predicted target
-        bullet.x += (bullet.serverX - bullet.x) * 0.15;
-        bullet.y += (bullet.serverY - bullet.y) * 0.15;
+      } else {
+        // Host authoritative physics
+        if (bullet.vx !== undefined && bullet.vy !== undefined) {
+          bullet.x += bullet.vx * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+          bullet.y += bullet.vy * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+        } else {
+          bullet.y += bullet.speed * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+        }
       }
 
       // Hit bottom check

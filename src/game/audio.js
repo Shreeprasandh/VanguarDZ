@@ -68,20 +68,15 @@ class AudioManager {
     const resumeAll = () => {
       if (this.muted) return;
       
-      if (this.currentTrack === 'menu_theme' && this.menuAudioCtx) {
-        if (this.menuAudioCtx.state === 'suspended') {
-          this.menuAudioCtx.resume().then(() => {
-            if (this.startMenuSynthFn) this.startMenuSynthFn();
-          }).catch(() => {});
-        }
-      }
-      
-      if (this.currentTrack === 'ingame_synth' && this.ingameAudioCtx) {
-        if (this.ingameAudioCtx.state === 'suspended') {
-          this.ingameAudioCtx.resume().then(() => {
-            if (this.startIngameSynthFn) this.startIngameSynthFn();
-          }).catch(() => {});
-        }
+      if (this.sfxAudioCtx && this.sfxAudioCtx.state === 'suspended') {
+        this.sfxAudioCtx.resume().then(() => {
+          if (this.currentTrack === 'menu_theme' && this.startMenuSynthFn) {
+            this.startMenuSynthFn();
+          }
+          if (this.currentTrack === 'ingame_synth' && this.startIngameSynthFn) {
+            this.startIngameSynthFn();
+          }
+        }).catch(() => {});
       }
     };
     if (typeof window !== 'undefined') {
@@ -806,7 +801,7 @@ class AudioManager {
     this.stopIngameSynthTheme();
     
     try {
-      this.menuAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      this.menuAudioCtx = this.sfxAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
       const ctx = this.menuAudioCtx;
       
       // Master Gain for menu theme to allow smooth fading transitions
@@ -961,15 +956,7 @@ class AudioManager {
 
       this.startMenuSynthFn = startSynth;
 
-      if (ctx.state === 'running') {
-        startSynth();
-      } else {
-        ctx.onstatechange = () => {
-          if (ctx.state === 'running') {
-            startSynth();
-          }
-        };
-      }
+      startSynth();
     } catch (e) {
       console.error('Menu theme initialization failed:', e);
     }
@@ -981,19 +968,19 @@ class AudioManager {
     
     const ctx = this.menuAudioCtx;
     const gainNode = this.menuMasterGain;
-    if (ctx && gainNode) {
+    if (gainNode) {
       try {
-        const t = ctx.currentTime;
+        const t = this.sfxAudioCtx.currentTime;
         gainNode.gain.setValueAtTime(gainNode.gain.value, t);
         gainNode.gain.exponentialRampToValueAtTime(0.0001, t + 1.0); // fade out over 1.0s
         setTimeout(() => {
           try {
-            ctx.close();
+            gainNode.disconnect();
           } catch(e) {}
         }, 1100);
       } catch (e) {
         try {
-          ctx.close();
+          gainNode.disconnect();
         } catch(err) {}
       }
     }
@@ -1013,7 +1000,7 @@ class AudioManager {
     this.stopIngameSynthTheme();
     
     try {
-      this.ingameAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      this.ingameAudioCtx = this.sfxAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
       const ctx = this.ingameAudioCtx;
       
       this.tempoCurrent = 1.0;
@@ -1255,15 +1242,7 @@ class AudioManager {
 
       this.startIngameSynthFn = startSynth;
 
-      if (ctx.state === 'running') {
-        startSynth();
-      } else {
-        ctx.onstatechange = () => {
-          if (ctx.state === 'running') {
-            startSynth();
-          }
-        };
-      }
+      startSynth();
     } catch (e) {
       console.error('Ingame synth theme initialization failed:', e);
     }
@@ -1277,19 +1256,19 @@ class AudioManager {
     
     const ctx = this.ingameAudioCtx;
     const gainNode = this.ingameMasterGain;
-    if (ctx && gainNode) {
+    if (gainNode) {
       try {
-        const t = ctx.currentTime;
+        const t = this.sfxAudioCtx.currentTime;
         gainNode.gain.setValueAtTime(gainNode.gain.value, t);
         gainNode.gain.exponentialRampToValueAtTime(0.0001, t + 1.0); // fade out over 1s
         setTimeout(() => {
           try {
-            ctx.close();
+            gainNode.disconnect();
           } catch(e) {}
         }, 1100);
       } catch (e) {
         try {
-          ctx.close();
+          gainNode.disconnect();
         } catch(err) {}
       }
     }
