@@ -257,7 +257,7 @@ export default function GameCanvas({
 
       // Filter out local player and store others as teammates
       const mates = players.map(p => {
-        // Find if they already have health in our state
+        const isSelf = p.socketId === socket?.id;
         const existingMate = state.teammates.find(m => m.socketId === p.socketId);
         return {
           socketId: p.socketId,
@@ -267,14 +267,14 @@ export default function GameCanvas({
           isHost: p.isHost,
           score: p.score || 0,
           level: p.level || 1,
-          health: existingMate ? existingMate.health : (p.health !== undefined ? p.health : 100),
-          isReviving: existingMate ? existingMate.isReviving : false,
-          reviveTimeRemaining: existingMate ? existingMate.reviveTimeRemaining : 0
+          health: isSelf ? state.health : (existingMate ? existingMate.health : (p.health !== undefined ? p.health : 100)),
+          isReviving: isSelf ? state.isReviving : (existingMate ? existingMate.isReviving : false),
+          reviveTimeRemaining: isSelf ? state.reviveTimeRemaining : (existingMate ? existingMate.reviveTimeRemaining : 0)
         };
       });
       state.teammates = mates;
       
-      // If we are playing, find our current health
+      // If we are playing, keep our current health synced
       const meInState = mates.find(m => m.socketId === socket?.id);
       if (meInState) {
         state.health = meInState.health;
@@ -309,7 +309,9 @@ export default function GameCanvas({
               data.enemies.forEach(e => {
                 state.enemies.push({
                   ...e,
-                  y: -40 // start offscreen
+                  x: e.x * canvas.width,
+                  y: e.y * canvas.height,
+                  speed: e.speed * canvas.height
                 });
               });
             }
@@ -321,49 +323,56 @@ export default function GameCanvas({
             const mate = state.teammates.find(m => m.socketId === data.playerId);
             const targetEnemy = state.enemies.find(e => e.id === data.wordId);
             
-            if (mate && targetEnemy) {
-              const shipX = state.playerPositions[mate.socketId] || getShipTargetX(mate.socketId, window.innerWidth);
-              const shipY = window.innerHeight - 80;
+            if (mate) {
+              const targetX = targetEnemy ? targetEnemy.x : (data.x * canvas.width);
+              const targetY = targetEnemy ? targetEnemy.y : (data.y * canvas.height);
+              
+              const shipX = state.playerPositions[mate.socketId] || getShipTargetX(mate.socketId, canvas.width);
+              const shipY = canvas.height - 80;
               
               // Add laser beam
               state.lasers.push({
                 fromX: shipX,
                 fromY: shipY - 20,
-                toX: data.x,
-                toY: data.y,
+                toX: targetX,
+                toY: targetY,
                 color: getColorHex(mate.color),
                 alpha: 1.0
               });
 
-              // Subtract character on target enemy
-              targetEnemy.targetIndex = data.charIndex + 1;
-              
               // Particle burst at impact
-              createExplosion(data.x, data.y, getColorHex(mate.color), 8);
+              createExplosion(targetX, targetY, getColorHex(mate.color), 8);
 
               // Play strike audio
-              GameAudio.play('hit', getPan(data.x));
+              GameAudio.play('hit', getPan(targetX));
+
+              if (targetEnemy) {
+                // Subtract character on target enemy
+                targetEnemy.targetIndex = data.charIndex + 1;
+              }
 
               if (data.wordFinished) {
-                if (targetEnemy.wordQueue && targetEnemy.wordQueue.length > 0) {
+                if (targetEnemy && targetEnemy.wordQueue && targetEnemy.wordQueue.length > 0) {
                   const nextWord = targetEnemy.wordQueue.shift();
                   targetEnemy.word = typeof nextWord === 'string' ? nextWord : nextWord.word;
                   if (nextWord && typeof nextWord === 'object' && nextWord.color) {
                     targetEnemy.color = nextWord.color;
                   }
                   targetEnemy.targetIndex = 0;
-                  createExplosion(data.x, data.y, getColorHex(mate.color), 10);
-                  GameAudio.play('explosionSmall', getPan(data.x));
+                  createExplosion(targetX, targetY, getColorHex(mate.color), 10);
+                  GameAudio.play('explosionSmall', getPan(targetX));
                 } else {
                   // Enemy dies
-                  state.enemies = state.enemies.filter(e => e.id !== data.wordId);
-                  handleEnemyCompletion(data.wordId);
-                  createExplosion(data.x, data.y, getColorHex(mate.color), 25, true);
+                  if (targetEnemy) {
+                    state.enemies = state.enemies.filter(e => e.id !== data.wordId);
+                    handleEnemyCompletion(data.wordId);
+                  }
+                  createExplosion(targetX, targetY, getColorHex(mate.color), 25, true);
                   if (data.wordId && data.wordId.startsWith('meteor')) {
-                    GameAudio.play('meteor_explosion', getPan(data.x));
+                    GameAudio.play('meteor_explosion', getPan(targetX));
                   } else {
                     const enemyType = targetEnemy ? targetEnemy.type : 'drone';
-                    const panVal = getPan(data.x);
+                    const panVal = getPan(targetX);
                     if (enemyType === 'drone') GameAudio.play('explosion_drone', panVal);
                     else if (enemyType === 'interceptor') GameAudio.play('explosion_interceptor', panVal);
                     else if (enemyType === 'kamikaze') GameAudio.play('explosion_kamikaze', panVal);
@@ -374,10 +383,10 @@ export default function GameCanvas({
                     } else if (enemyType === 'boss') GameAudio.play('boss_explosion', panVal);
                     else GameAudio.play('explosion', panVal);
                   }
-                  
-                  // Update teammate's score locally for drawing
-                  mate.score += data.damage;
                 }
+                
+                // Update teammate's score locally for drawing
+                mate.score += data.damage;
               }
             }
             break;
@@ -396,7 +405,15 @@ export default function GameCanvas({
 
           case 'SPAWN_BULLET': {
             if (socket.id !== data.hostId) {
-              state.bullets.push(data.bullet);
+              const b = data.bullet;
+              state.bullets.push({
+                ...b,
+                x: b.x * canvas.width,
+                y: b.y * canvas.height,
+                speed: b.speed * canvas.height,
+                vx: b.vx !== undefined ? b.vx * canvas.width : undefined,
+                vy: b.vy !== undefined ? b.vy * canvas.height : undefined
+              });
             }
             break;
           }
@@ -408,9 +425,21 @@ export default function GameCanvas({
             
             // Add children
             if (data.child1 && data.child2) {
-              state.enemies.push(data.child1, data.child2);
-              createExplosion((data.child1.x + data.child2.x) / 2, data.child1.y - 10, getColorHex(data.child1.color), 18, true);
-              GameAudio.play('explosionSmall', getPan((data.child1.x + data.child2.x) / 2));
+              const c1 = {
+                ...data.child1,
+                x: data.child1.x * canvas.width,
+                y: data.child1.y * canvas.height,
+                speed: data.child1.speed * canvas.height
+              };
+              const c2 = {
+                ...data.child2,
+                x: data.child2.x * canvas.width,
+                y: data.child2.y * canvas.height,
+                speed: data.child2.speed * canvas.height
+              };
+              state.enemies.push(c1, c2);
+              createExplosion((c1.x + c2.x) / 2, c1.y - 10, getColorHex(c1.color), 18, true);
+              GameAudio.play('explosionSmall', getPan((c1.x + c2.x) / 2));
             }
             break;
           }
@@ -464,11 +493,8 @@ export default function GameCanvas({
             const mate = state.teammates.find(m => m.socketId === data.playerId);
             if (mate) {
               mate.health = data.health;
-              if (mate.socketId === socket.id) {
+              if (mate.socketId === socket?.id) {
                 state.health = data.health;
-                state.screenShake = 15;
-                state.flashFrame = 6;
-                GameAudio.play('explosionPlayer');
               }
               setHudState(prev => ({ 
                 ...prev, 
@@ -579,26 +605,74 @@ export default function GameCanvas({
 
           case 'SYNC_POSITIONS': {
             if (socket.id !== data.hostId) {
+              // Sync boss position and custom timers if present
+              if (data.boss && state.bossObj) {
+                const targetX = data.boss.x * canvas.width;
+                const targetY = data.boss.y * canvas.height;
+                
+                // Detect Warp Spectre teleportation
+                if (Math.abs(state.bossObj.x - targetX) > 50) {
+                  createExplosion(state.bossObj.x, state.bossObj.y, '#38bdf8', 25, true);
+                  createExplosion(targetX, targetY, '#38bdf8', 25, true);
+                  GameAudio.play('laser', getPan(targetX));
+                  
+                  if (state.bossObj.words) {
+                    state.bossObj.words.forEach(w => {
+                      const matchingEnemy = state.enemies.find(e => e.id === w.id);
+                      if (matchingEnemy) matchingEnemy.x = targetX;
+                    });
+                  }
+                }
+                
+                state.bossObj.x = targetX;
+                state.bossObj.y = targetY;
+                state.bossObj.targetFireLane = data.boss.targetFireLane;
+                state.bossObj.fireWarningTime = data.boss.fireWarningTime;
+                state.bossObj.fireActiveTime = data.boss.fireActiveTime;
+                
+                if (data.boss.empTimer !== undefined) {
+                  // Trigger local EMP skill lockout if host reset it
+                  if (data.boss.empTimer === 0 && state.bossObj.empTimer > 300) {
+                    state.empDrainedTimer = 360;
+                    GameAudio.play('emp');
+                    createExplosion(canvas.width / 2, canvas.height / 2, '#fbbf24', 40, true);
+                  }
+                  state.bossObj.empTimer = data.boss.empTimer;
+                }
+              }
+
               data.enemies.forEach(syncE => {
                 const localE = state.enemies.find(e => e.id === syncE.id);
                 if (localE) {
-                  if (localE.serverX === undefined || Math.hypot(localE.x - syncE.x, localE.y - syncE.y) > 80) {
-                    localE.x = syncE.x;
-                    localE.y = syncE.y;
+                  const absoluteX = syncE.x * canvas.width;
+                  const absoluteY = syncE.y * canvas.height;
+                  // If coordinates are completely unset, or if they deviate by > 150 (snapping threshold), snap them.
+                  // Otherwise, smooth blend the target server coordinates to avoid sawtooth movement.
+                  if (localE.serverX === undefined || Math.hypot(localE.x - absoluteX, localE.y - absoluteY) > 150) {
+                    localE.x = absoluteX;
+                    localE.y = absoluteY;
+                    localE.serverX = absoluteX;
+                    localE.serverY = absoluteY;
+                  } else {
+                    localE.serverX = localE.serverX + (absoluteX - localE.serverX) * 0.3;
+                    localE.serverY = localE.serverY + (absoluteY - localE.serverY) * 0.3;
                   }
-                  localE.serverX = syncE.x;
-                  localE.serverY = syncE.y;
                 }
               });
               data.bullets.forEach(syncB => {
                 const localB = state.bullets.find(b => b.id === syncB.id);
                 if (localB) {
-                  if (localB.serverX === undefined || Math.hypot(localB.x - syncB.x, localB.y - syncB.y) > 80) {
-                    localB.x = syncB.x;
-                    localB.y = syncB.y;
+                  const absoluteX = syncB.x * canvas.width;
+                  const absoluteY = syncB.y * canvas.height;
+                  if (localB.serverX === undefined || Math.hypot(localB.x - absoluteX, localB.y - absoluteY) > 150) {
+                    localB.x = absoluteX;
+                    localB.y = absoluteY;
+                    localB.serverX = absoluteX;
+                    localB.serverY = absoluteY;
+                  } else {
+                    localB.serverX = localB.serverX + (absoluteX - localB.serverX) * 0.3;
+                    localB.serverY = localB.serverY + (absoluteY - localB.serverY) * 0.3;
                   }
-                  localB.serverX = syncB.x;
-                  localB.serverY = syncB.y;
                 }
               });
             }
@@ -781,13 +855,16 @@ export default function GameCanvas({
     onScoreUpdate(state.score, state.wave);
 
     if (isMultiplayer && socket) {
+      const canvas = canvasRef.current;
+      const widthVal = canvas ? canvas.width : window.innerWidth;
+      const heightVal = canvas ? canvas.height : window.innerHeight;
       socket.send(JSON.stringify({
         type: 'TYPING_STRIKE',
         wordId: enemy.id,
         charIndex: enemy.word ? enemy.word.length : 1,
         damage: scoreGained,
-        x: enemy.x,
-        y: enemy.y,
+        x: enemy.x / widthVal,
+        y: enemy.y / heightVal,
         wordFinished: true
       }));
     }
@@ -1418,13 +1495,16 @@ export default function GameCanvas({
 
     // Sync typing action to other players
     if (isMultiplayer && socket) {
+      const canvas = canvasRef.current;
+      const widthVal = canvas ? canvas.width : window.innerWidth;
+      const heightVal = canvas ? canvas.height : window.innerHeight;
       socket.send(JSON.stringify({
         type: 'TYPING_STRIKE',
         wordId: enemy.id,
         charIndex: charIndex,
         damage: scoreGained,
-        x: letterX,
-        y: letterY,
+        x: letterX / widthVal,
+        y: letterY / heightVal,
         wordFinished: wordFinished
       }));
 
@@ -1723,102 +1803,121 @@ export default function GameCanvas({
     if (state.waveState === 'boss_fight' && state.bossObj && state.bossObj.type === 'mini_boss') {
       const boss = state.bossObj;
       
-      // 1. Warp Spectre Teleportation
-      if (boss.name === 'WARP SPECTRE') {
-        boss.teleportTimer = (boss.teleportTimer || 0) + 1;
-        if (boss.teleportTimer >= 200) { // ~3.3 seconds
-          boss.teleportTimer = 0;
-          const oldX = boss.x;
-          boss.x = 100 + Math.random() * (canvas.width - 200);
-          
-          createExplosion(oldX, boss.y, '#38bdf8', 25, true);
-          createExplosion(boss.x, boss.y, '#38bdf8', 25, true);
-          GameAudio.play('laser', getPan(boss.x)); // warp teleport sound
-          
-          // Update words target positions
-          boss.words.forEach(w => {
-            const matchingEnemy = state.enemies.find(e => e.id === w.id);
-            if (matchingEnemy) matchingEnemy.x = boss.x;
-          });
-        }
-      }
-
-      // 2. Thermobaric Devastator fire lanes
-      if (boss.name === 'THERMOBARIC DEVASTATOR') {
-        boss.fireTimer = (boss.fireTimer || 0) + 1;
-        if (boss.fireTimer >= 240) { // ~4 seconds
-          boss.fireTimer = 0;
-          const lanes = ['left', 'center', 'right'];
-          boss.targetFireLane = lanes[Math.floor(Math.random() * lanes.length)];
-          boss.fireWarningTime = 90; // 1.5 seconds warning
-          const laneXVal = getShipX(boss.targetFireLane, canvas.width);
-          GameAudio.play('warning', getPan(laneXVal));
-        }
-
-        if (boss.targetFireLane) {
-          if (boss.fireWarningTime > 0) {
-            boss.fireWarningTime -= 1;
-            if (boss.fireWarningTime <= 0) {
-              boss.fireActiveTime = 180; // 3 seconds active
-              const laneXVal = getShipX(boss.targetFireLane, canvas.width);
-              GameAudio.play('explosionLarge', getPan(laneXVal)); // burn roaring blast
-            }
-          } else if (boss.fireActiveTime > 0) {
-            boss.fireActiveTime -= 1;
+      if (isHost) {
+        // Authoritative mini-boss logic for Host only
+        // 1. Warp Spectre Teleportation
+        if (boss.name === 'WARP SPECTRE') {
+          boss.teleportTimer = (boss.teleportTimer || 0) + 1;
+          if (boss.teleportTimer >= 200) { // ~3.3 seconds
+            boss.teleportTimer = 0;
+            const oldX = boss.x;
+            boss.x = 100 + Math.random() * (canvas.width - 200);
             
-            // Damage player ship if in fire lane
-            const localPosition = isMultiplayer 
-              ? players.find(p => p.socketId === socket?.id)?.position || 'center' 
-              : 'center';
-            if (localPosition === boss.targetFireLane) {
-              if (boss.fireActiveTime % 10 === 0) {
-                takeDamage(1.5);
-              }
-            }
-            if (boss.fireActiveTime <= 0) {
-              boss.targetFireLane = null;
+            createExplosion(oldX, boss.y, '#38bdf8', 25, true);
+            createExplosion(boss.x, boss.y, '#38bdf8', 25, true);
+            GameAudio.play('laser', getPan(boss.x)); // warp teleport sound
+            
+            // Update words target positions
+            boss.words.forEach(w => {
+              const matchingEnemy = state.enemies.find(e => e.id === w.id);
+              if (matchingEnemy) matchingEnemy.x = boss.x;
+            });
+          }
+        }
+
+        // 2. Thermobaric Devastator fire lanes random trigger
+        if (boss.name === 'THERMOBARIC DEVASTATOR') {
+          boss.fireTimer = (boss.fireTimer || 0) + 1;
+          if (boss.fireTimer >= 240) { // ~4 seconds
+            boss.fireTimer = 0;
+            const lanes = ['left', 'center', 'right'];
+            boss.targetFireLane = lanes[Math.floor(Math.random() * lanes.length)];
+            boss.fireWarningTime = 90; // 1.5 seconds warning
+            const laneXVal = getShipX(boss.targetFireLane, canvas.width);
+            GameAudio.play('warning', getPan(laneXVal));
+          }
+        }
+
+        // 3. EMP Void-Weaver lock active skill hotkeys timer
+        if (boss.name === 'EMP VOID-WEAVER') {
+          boss.empTimer = (boss.empTimer || 0) + 1;
+          if (boss.empTimer >= 360) { // ~6 seconds
+            boss.empTimer = 0;
+            state.empDrainedTimer = 360; // 6 seconds EMP lockout
+            GameAudio.play('emp');
+            createExplosion(canvas.width / 2, canvas.height / 2, '#fbbf24', 40, true);
+          }
+        }
+
+        // 4. Mirage Phantom Decoy Mirror clones
+        if (boss.name === 'MIRAGE PHANTOM') {
+          boss.decoyTimer = (boss.decoyTimer || 0) + 1;
+          if (boss.decoyTimer >= 400) { // ~6.6 seconds
+            boss.decoyTimer = 0;
+            
+            // Clear old decoy clones
+            state.enemies = state.enemies.filter(e => e.type !== 'mirage_decoy');
+            
+            // Spawn 2 decoy clones
+            const offsets = [-180, 180];
+            const newDecoys = [];
+            offsets.forEach((ox, i) => {
+              const cloneX = Math.max(80, Math.min(canvas.width - 80, boss.x + ox));
+              const decoy = {
+                id: `mirage-decoy-${i}-${Math.random().toString(36).substring(2, 9)}`,
+                word: getWordForEnemy('boss', state.wave, state.usedWords),
+                color: 'purple',
+                x: cloneX,
+                y: boss.y,
+                speed: 0,
+                targetIndex: 0,
+                type: 'mirage_decoy'
+              };
+              state.enemies.push(decoy);
+              newDecoys.push(decoy);
+            });
+            GameAudio.play('laser');
+
+            if (isMultiplayer && socket) {
+              const normalizedDecoys = newDecoys.map(d => ({
+                ...d,
+                x: d.x / canvas.width,
+                y: d.y / canvas.height
+              }));
+              socket.send(JSON.stringify({
+                type: 'SPAWN_ENEMIES',
+                enemies: normalizedDecoys,
+                hostId: socket.id
+              }));
             }
           }
         }
       }
 
-      // 3. EMP Void-Weaver lock active skill hotkeys
-      if (boss.name === 'EMP VOID-WEAVER') {
-        boss.empTimer = (boss.empTimer || 0) + 1;
-        if (boss.empTimer >= 360) { // ~6 seconds
-          boss.empTimer = 0;
-          state.empDrainedTimer = 360; // 6 seconds EMP lockout
-          GameAudio.play('emp');
-          createExplosion(canvas.width / 2, canvas.height / 2, '#fbbf24', 40, true);
-        }
-      }
-
-      // 4. Mirage Phantom Decoy Mirror clones
-      if (boss.name === 'MIRAGE PHANTOM') {
-        boss.decoyTimer = (boss.decoyTimer || 0) + 1;
-        if (boss.decoyTimer >= 400) { // ~6.6 seconds
-          boss.decoyTimer = 0;
+      // Shared countdowns and local action triggers for both Host and Guest
+      if (boss.name === 'THERMOBARIC DEVASTATOR' && boss.targetFireLane) {
+        if (boss.fireWarningTime > 0) {
+          boss.fireWarningTime -= 1;
+          if (boss.fireWarningTime <= 0) {
+            boss.fireActiveTime = 180; // 3 seconds active
+            const laneXVal = getShipX(boss.targetFireLane, canvas.width);
+            GameAudio.play('explosionLarge', getPan(laneXVal));
+          }
+        } else if (boss.fireActiveTime > 0) {
+          boss.fireActiveTime -= 1;
           
-          // Clear old decoy clones
-          state.enemies = state.enemies.filter(e => e.type !== 'mirage_decoy');
-          
-          // Spawn 2 decoy clones
-          const offsets = [-180, 180];
-          offsets.forEach((ox, i) => {
-            const cloneX = Math.max(80, Math.min(canvas.width - 80, boss.x + ox));
-            const decoy = {
-              id: `mirage-decoy-${i}-${Date.now()}`,
-              word: getWordForEnemy('boss', state.wave, state.usedWords),
-              color: 'purple',
-              x: cloneX,
-              y: boss.y,
-              speed: 0,
-              targetIndex: 0,
-              type: 'mirage_decoy'
-            };
-            state.enemies.push(decoy);
-          });
-          GameAudio.play('laser');
+          // Damage local player ship if in fire lane
+          const localPosition = isMultiplayer 
+            ? players.find(p => p.socketId === socket?.id)?.position || 'center' 
+            : 'center';
+          if (localPosition === boss.targetFireLane) {
+            if (boss.fireActiveTime % 10 === 0) {
+              takeDamage(1.5);
+            }
+          }
+          if (boss.fireActiveTime <= 0) {
+            boss.targetFireLane = null;
+          }
         }
       }
     }
@@ -2006,8 +2105,18 @@ export default function GameCanvas({
             socket.send(JSON.stringify({
               type: 'REPLICATOR_SPLIT',
               parentId: enemy.id,
-              child1,
-              child2
+              child1: {
+                ...child1,
+                x: child1.x / canvas.width,
+                y: child1.y / canvas.height,
+                speed: child1.speed / canvas.height
+              },
+              child2: {
+                ...child2,
+                x: child2.x / canvas.width,
+                y: child2.y / canvas.height,
+                speed: child2.speed / canvas.height
+              }
             }));
           }
           
@@ -2325,17 +2434,26 @@ export default function GameCanvas({
       }
     });
 
-    // Periodic synchronization from Host to Guest to prevent drift (12 frames = 0.2s)
-    if (isMultiplayer && isHost && state.enemies.length > 0) {
+    // Periodic synchronization from Host to Guest to prevent drift (8 frames = ~130ms)
+    if (isMultiplayer && isHost) {
       state.syncTimer = (state.syncTimer || 0) + 1;
-      if (state.syncTimer >= 12) {
+      if (state.syncTimer >= 8) {
         state.syncTimer = 0;
-        const enemyPositions = state.enemies.map(e => ({ id: e.id, x: e.x, y: e.y }));
-        const bulletPositions = state.bullets.map(b => ({ id: b.id, x: b.x, y: b.y }));
+        const enemyPositions = state.enemies.map(e => ({ id: e.id, x: e.x / canvas.width, y: e.y / canvas.height }));
+        const bulletPositions = state.bullets.map(b => ({ id: b.id, x: b.x / canvas.width, y: b.y / canvas.height }));
+        const bossData = state.bossObj ? {
+          x: state.bossObj.x / canvas.width,
+          y: state.bossObj.y / canvas.height,
+          targetFireLane: state.bossObj.targetFireLane,
+          fireWarningTime: state.bossObj.fireWarningTime,
+          fireActiveTime: state.bossObj.fireActiveTime,
+          empTimer: state.bossObj.empTimer
+        } : null;
         socket.send(JSON.stringify({
           type: 'SYNC_POSITIONS',
           enemies: enemyPositions,
-          bullets: bulletPositions
+          bullets: bulletPositions,
+          boss: bossData
         }));
       }
     }
@@ -2423,9 +2541,14 @@ export default function GameCanvas({
     GameAudio.play('emp'); // alert sound
 
     if (isMultiplayer && socket) {
+      const normalizedEnemy = {
+        ...anomalyEnemy,
+        x: anomalyEnemy.x / canvas.width,
+        y: anomalyEnemy.y / canvas.height
+      };
       socket.send(JSON.stringify({
         type: 'SPAWN_ENEMIES',
-        enemies: [anomalyEnemy],
+        enemies: [normalizedEnemy],
         hostId: socket.id
       }));
       socket.send(JSON.stringify({
@@ -2465,9 +2588,14 @@ export default function GameCanvas({
     }
 
     if (isMultiplayer && socket) {
+      const normalizedMeteors = newMeteors.map(m => ({
+        ...m,
+        x: m.x / canvas.width,
+        y: m.y / canvas.height
+      }));
       socket.send(JSON.stringify({
         type: 'SPAWN_ENEMIES',
-        enemies: newMeteors,
+        enemies: normalizedMeteors,
         hostId: socket.id
       }));
     }
@@ -2631,9 +2759,14 @@ export default function GameCanvas({
     }
 
     if (isMultiplayer && socket) {
+      const normalizedEnemies = newEnemies.map(e => ({
+        ...e,
+        x: e.x / canvas.width,
+        y: e.y / canvas.height
+      }));
       socket.send(JSON.stringify({
         type: 'SPAWN_ENEMIES',
-        enemies: newEnemies,
+        enemies: normalizedEnemies,
         hostId: socket.id
       }));
     }
@@ -2658,9 +2791,15 @@ export default function GameCanvas({
     state.bullets.push(bullet);
 
     if (isMultiplayer && socket) {
+      const normalizedBullet = {
+        ...bullet,
+        x: bullet.x / canvas.width,
+        y: bullet.y / canvas.height,
+        speed: bullet.speed / canvas.height
+      };
       socket.send(JSON.stringify({
         type: 'SPAWN_BULLET',
-        bullet,
+        bullet: normalizedBullet,
         hostId: socket.id
       }));
     }
@@ -2925,7 +3064,14 @@ export default function GameCanvas({
         spawnedBullets.forEach(b => {
           socket.send(JSON.stringify({
             type: 'SPAWN_BULLET',
-            bullet: b,
+            bullet: {
+              ...b,
+              x: b.x / canvas.width,
+              y: b.y / canvas.height,
+              speed: b.speed / canvas.height,
+              vx: b.vx !== undefined ? b.vx / canvas.width : undefined,
+              vy: b.vy !== undefined ? b.vy / canvas.height : undefined
+            },
             hostId: socket.id
           }));
         });
@@ -2953,7 +3099,14 @@ export default function GameCanvas({
       if (isMultiplayer && socket) {
         socket.send(JSON.stringify({
           type: 'SPAWN_BULLET',
-          bullet,
+          bullet: {
+            ...bullet,
+            x: bullet.x / canvas.width,
+            y: bullet.y / canvas.height,
+            speed: bullet.speed / canvas.height,
+            vx: bullet.vx !== undefined ? bullet.vx / canvas.width : undefined,
+            vy: bullet.vy !== undefined ? bullet.vy / canvas.height : undefined
+          },
           hostId: socket.id
         }));
       }
@@ -3030,9 +3183,14 @@ export default function GameCanvas({
     state.enemies.push(minion);
 
     if (isMultiplayer && socket) {
+      const normalizedMinion = {
+        ...minion,
+        x: minion.x / canvas.width,
+        y: minion.y / canvas.height
+      };
       socket.send(JSON.stringify({
         type: 'SPAWN_ENEMIES',
-        enemies: [minion],
+        enemies: [normalizedMinion],
         hostId: socket.id
       }));
     }

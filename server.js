@@ -560,7 +560,7 @@ wss.on('connection', (ws) => {
               type: 'PLAYER_HIT',
               playerId: data.playerId,
               health: data.health
-            });
+            }, socketId);
           }
           break;
         }
@@ -571,7 +571,7 @@ wss.on('connection', (ws) => {
               type: 'PLAYER_DOWN',
               playerId: data.playerId,
               reviveTime: data.reviveTime
-            });
+            }, socketId);
           }
           break;
         }
@@ -581,7 +581,7 @@ wss.on('connection', (ws) => {
             sendToRoom(player.roomId, {
               type: 'PLAYER_REVIVED',
               playerId: data.playerId
-            });
+            }, socketId);
           }
           break;
         }
