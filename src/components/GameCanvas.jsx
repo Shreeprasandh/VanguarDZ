@@ -2012,8 +2012,16 @@ export default function GameCanvas({
 
       // Easing correction for multiplayer guests to prevent flickering/jittering
       if (!isHost && enemy.serverY !== undefined) {
-        enemy.x += (enemy.serverX - enemy.x) * 0.12;
-        enemy.y += (enemy.serverY - enemy.y) * 0.12;
+        // Move the server authoritative target forward by the same speed/skills logic
+        const dy = enemy.speed * baseSpeedMultiplier * multiplayerDifficulty * speedFactor;
+        enemy.serverY += dy;
+        if (enemy.type === 'drone' && pat !== 'straight' && speedFactor > 0) {
+          enemy.serverX += Math.sin(enemy.patternAge * 0.04) * 0.65 * speedFactor;
+        }
+
+        // Ease the visual coordinate toward the moving predicted target
+        enemy.x += (enemy.serverX - enemy.x) * 0.15;
+        enemy.y += (enemy.serverY - enemy.y) * 0.15;
       }
 
       // Drone subtle green trailing particles
@@ -2172,8 +2180,17 @@ export default function GameCanvas({
 
       // Easing correction for multiplayer guests to prevent flickering/jittering
       if (!isHost && bullet.serverY !== undefined) {
-        bullet.x += (bullet.serverX - bullet.x) * 0.12;
-        bullet.y += (bullet.serverY - bullet.y) * 0.12;
+        // Move the server authoritative target forward by the same velocity and time-warp modifiers
+        if (bullet.vx !== undefined && bullet.vy !== undefined) {
+          bullet.serverX += bullet.vx * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+          bullet.serverY += bullet.vy * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+        } else {
+          bullet.serverY += bullet.speed * baseSpeedMultiplier * multiplayerDifficulty * bulletFactor * speedFactor;
+        }
+
+        // Ease the visual coordinate toward the moving predicted target
+        bullet.x += (bullet.serverX - bullet.x) * 0.15;
+        bullet.y += (bullet.serverY - bullet.y) * 0.15;
       }
 
       // Hit bottom check
