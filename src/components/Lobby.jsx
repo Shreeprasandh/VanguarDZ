@@ -83,7 +83,7 @@ export default function Lobby({ roomCode, players, maxPlayers = 3, localPlayerId
   const uniqueColors = new Set(colorsList);
   const noColorConflicts = uniqueColors.size === colorsList.length && colorsList.length === players.length;
 
-  const canStart = isHost && isLobbyFull && allOthersReady && allPickedColors && noColorConflicts;
+  const canStart = isHost && players.length >= 2 && allOthersReady && allPickedColors && noColorConflicts;
 
   const getShipSvg = (color) => {
     let strokeColor = 'rgba(255, 255, 255, 0.15)';

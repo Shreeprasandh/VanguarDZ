@@ -1004,19 +1004,9 @@ export default function GameCanvas({
     if (!isMultiplayer || !players || players.length === 0) {
       return screenWidth / 2;
     }
-    const index = players.findIndex(p => p.socketId === socketId);
-    if (index === -1) return screenWidth / 2;
-
-    const activeCount = players.length;
-    if (activeCount === 3) {
-      if (index === 0) return screenWidth * 0.5; // center
-      if (index === 1) return screenWidth * 0.75; // right
-      if (index === 2) return screenWidth * 0.25; // left
-    } else if (activeCount === 2) {
-      if (index === 0) return screenWidth * 0.25; // left
-      if (index === 1) return screenWidth * 0.75; // right
-    }
-    return screenWidth * 0.5; // 1 player center
+    const p = players.find(player => player.socketId === socketId);
+    if (!p) return screenWidth / 2;
+    return getShipX(p.position, screenWidth);
   };
 
   const getLocalShipX = (screenWidth) => {

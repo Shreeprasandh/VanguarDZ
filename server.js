@@ -410,6 +410,21 @@ wss.on('connection', (ws) => {
 
           room.state = 'playing';
           room.wave = 1;
+
+          // Re-align positions based on the count of players actually starting the game
+          const startCount = room.players.length;
+          room.players.forEach((p, idx) => {
+            if (startCount === 1) {
+              p.position = 'center';
+            } else if (startCount === 2) {
+              if (idx === 0) p.position = 'left';
+              else if (idx === 1) p.position = 'right';
+            } else {
+              if (idx === 0) p.position = 'center';
+              else if (idx === 1) p.position = 'right';
+              else if (idx === 2) p.position = 'left';
+            }
+          });
           
           // Set states to playing
           room.players.forEach(p => {
@@ -705,10 +720,12 @@ function handleLeaveRoom(socketId) {
       room.hostId = room.players[0].socketId;
     }
 
-    // Re-assign positions so they align correctly
-    const maxPlayers = room.maxPlayers || 3;
+    // Re-assign positions so they align correctly based on remaining players
+    const remainingCount = room.players.length;
     room.players.forEach((p, idx) => {
-      if (maxPlayers === 2) {
+      if (remainingCount === 1) {
+        p.position = 'center';
+      } else if (remainingCount === 2) {
         if (idx === 0) p.position = 'left';
         else if (idx === 1) p.position = 'right';
       } else {
