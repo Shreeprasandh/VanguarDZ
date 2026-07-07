@@ -1475,11 +1475,11 @@ export default function GameCanvas({
           GameAudio.play('shield_hit', getPan(enemy.x));
           return; // Linked target is invulnerable!
         }
-        const nextChar = enemy.word[enemy.targetIndex].toLowerCase();
+        const nextChar = enemy.word && enemy.word[enemy.targetIndex] ? enemy.word[enemy.targetIndex].toLowerCase() : '';
         if (char === nextChar) {
           // If Overclock is active, hit 2 letters!
           hitTarget(enemy);
-          if (state.overclockTime > 0 && enemy.targetIndex < enemy.word.length) {
+          if (state.overclockTime > 0 && enemy.word && enemy.targetIndex < enemy.word.length) {
             // Hit second letter
             hitTarget(enemy);
           }
@@ -1517,7 +1517,7 @@ export default function GameCanvas({
     // In co-op, we can ONLY target enemies that match our ship color (meteors are shared!)
     const eligibleEnemies = state.enemies.filter(e => {
       const matchesColor = !isMultiplayer || e.color === shipColor || e.type === 'meteor';
-      const startsWithChar = e.word[0].toLowerCase() === char;
+      const startsWithChar = e.word && e.word[0] && e.word[0].toLowerCase() === char;
       return matchesColor && startsWithChar && e.targetIndex === 0 && !e.isInvulnerable;
     });
 
@@ -1525,7 +1525,7 @@ export default function GameCanvas({
       // Check if they tried to target a linked invulnerable enemy
       const invulnerableMatch = state.enemies.find(e => {
         const matchesColor = !isMultiplayer || e.color === shipColor || e.type === 'meteor';
-        const startsWithChar = e.word[0].toLowerCase() === char;
+        const startsWithChar = e.word && e.word[0] && e.word[0].toLowerCase() === char;
         return matchesColor && startsWithChar && e.isInvulnerable;
       });
       if (invulnerableMatch) {
