@@ -2878,6 +2878,9 @@ export default function GameCanvas({
       let hp = 1;
       
       const rng = Math.random();
+      const isKamikazeWave = state.wave >= 5;
+      const kamikazeChance = isKamikazeWave ? (state.wave < 40 ? 0.08 : 0.13) : 0.0;
+
       if (state.wave >= 16 && rng > 0.96) {
         type = 'replicator';
         speed = 0.45 + Math.random() * 0.15;
@@ -2891,11 +2894,11 @@ export default function GameCanvas({
         type = 'cruiser'; // General
         speed = 0.3 + Math.random() * 0.2;
         hp = 2;
-      } else if (state.wave >= 5 && rng > 0.52 && rng <= 0.70) {
+      } else if (isKamikazeWave && rng > 0.70 - kamikazeChance && rng <= 0.70) {
         type = 'kamikaze';
         const waveScale = Math.min(1.0, (state.wave - 5) / 20); // 0.0 at wave 5, scaling to 1.0 at wave 25+
         speed = (0.7 + waveScale * 0.6) + Math.random() * (0.2 + waveScale * 0.1);
-      } else if (state.wave >= 3 && rng > 0.30 && rng <= 0.52) {
+      } else if (state.wave >= 3 && rng > 0.70 - kamikazeChance - 0.22 && rng <= 0.70 - kamikazeChance) {
         type = 'interceptor'; // Elite
         speed = 0.9 + Math.random() * 0.4;
       }
