@@ -539,38 +539,40 @@ export default function GameCanvas({
           }
 
           case 'SYNC_BOSS_PHASE': {
-            // Start boss fight phase on clients
-            state.waveState = 'boss_fight';
-            if (!state.bossObj) {
-              state.bossObj = {
-                id: data.bossId || 'boss',
-                type: data.bossType || 'boss',
-                name: data.bossName || 'BOSS',
-                color: data.bossColor || 'purple',
-                x: canvas.width / 2,
-                y: 120,
-                width: data.bossWidth || 180,
-                height: data.bossHeight || 100,
-                health: data.bossHealth || 100,
-                maxHealth: 100,
-                words: data.bossWords || [],
-                phase: data.phase,
-                shootTimer: 120
-              };
-            } else {
-              state.bossObj.id = data.bossId !== undefined ? data.bossId : state.bossObj.id;
-              state.bossObj.type = data.bossType !== undefined ? data.bossType : state.bossObj.type;
-              state.bossObj.name = data.bossName !== undefined ? data.bossName : state.bossObj.name;
-              state.bossObj.color = data.bossColor !== undefined ? data.bossColor : state.bossObj.color;
-              state.bossObj.width = data.bossWidth !== undefined ? data.bossWidth : state.bossObj.width;
-              state.bossObj.height = data.bossHeight !== undefined ? data.bossHeight : state.bossObj.height;
-              state.bossObj.health = data.bossHealth !== undefined ? data.bossHealth : state.bossObj.health;
-              state.bossObj.words = data.bossWords !== undefined ? data.bossWords : state.bossObj.words;
-              state.bossObj.phase = data.phase !== undefined ? data.phase : state.bossObj.phase;
+            if (socket.id !== data.hostId) {
+              // Start boss fight phase on clients
+              state.waveState = 'boss_fight';
+              if (!state.bossObj) {
+                state.bossObj = {
+                  id: data.bossId || 'boss',
+                  type: data.bossType || 'boss',
+                  name: data.bossName || 'BOSS',
+                  color: data.bossColor || 'purple',
+                  x: canvas.width / 2,
+                  y: 120,
+                  width: data.bossWidth || 180,
+                  height: data.bossHeight || 100,
+                  health: data.bossHealth || 100,
+                  maxHealth: 100,
+                  words: data.bossWords || [],
+                  phase: data.phase,
+                  shootTimer: 120
+                };
+              } else {
+                state.bossObj.id = data.bossId !== undefined ? data.bossId : state.bossObj.id;
+                state.bossObj.type = data.bossType !== undefined ? data.bossType : state.bossObj.type;
+                state.bossObj.name = data.bossName !== undefined ? data.bossName : state.bossObj.name;
+                state.bossObj.color = data.bossColor !== undefined ? data.bossColor : state.bossObj.color;
+                state.bossObj.width = data.bossWidth !== undefined ? data.bossWidth : state.bossObj.width;
+                state.bossObj.height = data.bossHeight !== undefined ? data.bossHeight : state.bossObj.height;
+                state.bossObj.health = data.bossHealth !== undefined ? data.bossHealth : state.bossObj.health;
+                state.bossObj.words = data.bossWords !== undefined ? data.bossWords : state.bossObj.words;
+                state.bossObj.phase = data.phase !== undefined ? data.phase : state.bossObj.phase;
+              }
+              // Clear any active boss shields to prevent duplicates
+              state.enemies = state.enemies.filter(e => e.type !== 'boss_shield');
+              loadBossWordsAsEnemies(data.bossWords || state.bossObj.words);
             }
-            // Clear any active boss shields to prevent duplicates
-            state.enemies = state.enemies.filter(e => e.type !== 'boss_shield');
-            loadBossWordsAsEnemies(data.bossWords || state.bossObj.words);
             break;
           }
 
@@ -3581,6 +3583,7 @@ export default function GameCanvas({
     if (state.waveState !== 'boss_fight' || !state.bossObj) return;
 
     const players = state.players || [];
+    const isHost = !isMultiplayer || (players.find(p => p.socketId === socket?.id)?.isHost);
     const boss = state.bossObj;
     const shieldIndex = boss.words.findIndex(w => w.id === completedEnemyId);
     
@@ -3594,26 +3597,29 @@ export default function GameCanvas({
         boss.health = 100;
         // Spark explosion on boss
         createExplosion(boss.x, boss.y, getColorHex(boss.words[shieldIndex].color), 30, true);
-        // Regenerate this word slot with a fresh target word so it continues endlessly
-        boss.words[shieldIndex].completed = false;
-        boss.words[shieldIndex].word = getWordForEnemy('boss', state.wave, state.usedWords);
-        boss.words[shieldIndex].targetIndex = 0;
-        boss.words[shieldIndex].active = true;
-        if (isMultiplayer && players && players.length > 0) {
-          const colors = players.map(p => p.color).filter(Boolean);
-          if (colors.length > 0) {
-            boss.words[shieldIndex].color = colors[Math.floor(Math.random() * colors.length)];
-          }
-        }
-        loadBossWordsAsEnemies(boss.words);
         
-        if (isMultiplayer && socket) {
-          socket.send(JSON.stringify({
-            type: 'SYNC_BOSS_PHASE',
-            phase: boss.phase,
-            bossWords: boss.words,
-            hostId: socket.id
-          }));
+        if (!isMultiplayer || isHost) {
+          // Regenerate this word slot with a fresh target word so it continues endlessly
+          boss.words[shieldIndex].completed = false;
+          boss.words[shieldIndex].word = getWordForEnemy('boss', state.wave, state.usedWords);
+          boss.words[shieldIndex].targetIndex = 0;
+          boss.words[shieldIndex].active = true;
+          if (isMultiplayer && players && players.length > 0) {
+            const colors = players.map(p => p.color).filter(Boolean);
+            if (colors.length > 0) {
+              boss.words[shieldIndex].color = colors[Math.floor(Math.random() * colors.length)];
+            }
+          }
+          loadBossWordsAsEnemies(boss.words);
+          
+          if (isMultiplayer && socket) {
+            socket.send(JSON.stringify({
+              type: 'SYNC_BOSS_PHASE',
+              phase: boss.phase,
+              bossWords: boss.words,
+              hostId: socket.id
+            }));
+          }
         }
         return;
       }
@@ -3666,9 +3672,11 @@ export default function GameCanvas({
         state.bullets = [];
         
         // Advance wave or docking station
-        setTimeout(() => {
-          handleWaveEndDetection();
-        }, 1500);
+        if (!isMultiplayer || isHost) {
+          setTimeout(() => {
+            handleWaveEndDetection();
+          }, 1500);
+        }
       } else {
         // Activate next word in cycle pattern
         const nextActive = boss.words.find(w => !w.completed);
@@ -3676,7 +3684,7 @@ export default function GameCanvas({
           nextActive.active = true;
           loadBossWordsAsEnemies(boss.words);
           
-          if (isMultiplayer && socket) {
+          if (isHost && isMultiplayer && socket) {
             socket.send(JSON.stringify({
               type: 'SYNC_BOSS_PHASE',
               phase: boss.phase + 1,
@@ -5246,7 +5254,12 @@ export default function GameCanvas({
   const handleEnemyCompletion = (enemyId) => {
     // If it is a boss shield word
     if (enemyId.startsWith('boss-w-')) {
-      checkBossShieldsCompleted(enemyId);
+      const state = stateRef.current;
+      const players = state.players || [];
+      const isHost = !isMultiplayer || (players.find(p => p.socketId === socket?.id)?.isHost);
+      if (isHost) {
+        checkBossShieldsCompleted(enemyId);
+      }
     }
   };
 
