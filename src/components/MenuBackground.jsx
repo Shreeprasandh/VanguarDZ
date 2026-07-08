@@ -24,7 +24,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         size: 0.8 + Math.random() * 1.2,
         vx: (Math.random() - 0.5) * 0.12,
         vy: (Math.random() - 0.5) * 0.12,
-        baseAlpha: 0.05 + Math.random() * 0.12,
+        baseAlpha: 0.15 + Math.random() * 0.12, // Increased by 10% (0.05 -> 0.15)
         alpha: 0,
         twinkleSpeed: 0.003 + Math.random() * 0.007,
         phase: Math.random() * Math.PI * 2
@@ -41,7 +41,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         radius: 50,
         vx: 0.015,
         vy: -0.008,
-        opacity: 0.13
+        opacity: 0.23 // Increased by 10% (0.13 -> 0.23)
       },
       // 2. Orbital Satellite (Right top) - Mid
       {
@@ -51,7 +51,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         size: 65,
         vx: -0.01,
         vy: 0.01,
-        opacity: 0.08
+        opacity: 0.18 // Increased by 10% (0.08 -> 0.18)
       },
       // 3. Cratered Asteroid (Mid top) - Far/Faint
       {
@@ -62,7 +62,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         offsets: [6, -3, 8, 2, -5, 9, -7, -1],
         vx: 0.02,
         vy: 0.015,
-        opacity: 0.05
+        opacity: 0.15 // Increased by 10% (0.05 -> 0.15)
       },
       // 4. Space Observatory Telescope (Left mid-bottom) - Mechanical structure (replaces old human-like wreckage)
       {
@@ -72,7 +72,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         size: 70,
         vx: -0.008,
         vy: -0.008,
-        opacity: 0.12
+        opacity: 0.22 // Increased by 10% (0.12 -> 0.22)
       },
       // 5. Orbiting Solar System (Mid Bottom-Right) - Stationary to remain fully visible
       {
@@ -85,7 +85,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         orbitSpeed: 0.0008,
         vx: 0,
         vy: 0,
-        opacity: 0.07
+        opacity: 0.17 // Increased by 10% (0.07 -> 0.17)
       },
       // 6. Communications Radar Array (Bottom Left) - Mid
       {
@@ -95,7 +95,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         size: 45,
         vx: 0.012,
         vy: -0.006,
-        opacity: 0.08
+        opacity: 0.18 // Increased by 10% (0.08 -> 0.18)
       },
       // 7. Fighter Wing Debris (Bottom Right) - Close
       {
@@ -105,7 +105,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         size: 50,
         vx: -0.015,
         vy: 0.008,
-        opacity: 0.11
+        opacity: 0.21 // Increased by 10% (0.11 -> 0.21)
       },
       // 8. Distant Double Asteroids (Mid Left-Bottom) - Far
       {
@@ -115,7 +115,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         radius: 12,
         vx: 0.008,
         vy: 0.012,
-        opacity: 0.06
+        opacity: 0.16 // Increased by 10% (0.06 -> 0.16)
       },
       // 9. Detailed Ringed Planet (Mid Bottom-Left) - Close
       {
@@ -125,7 +125,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         radius: 20,
         vx: 0.005,
         vy: -0.003,
-        opacity: 0.10
+        opacity: 0.20 // Increased by 10% (0.10 -> 0.20)
       },
       // 10. Weather Satellite (Bottom Right Corner) - Mid
       {
@@ -135,7 +135,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         size: 30,
         vx: -0.004,
         vy: 0.005,
-        opacity: 0.09
+        opacity: 0.19 // Increased by 10% (0.09 -> 0.19)
       },
       // 11. Small Planet (Right Center) - Close
       {
@@ -145,7 +145,7 @@ export default function MenuBackground({ shipColor = 'blue' }) {
         radius: 14,
         vx: -0.005,
         vy: -0.005,
-        opacity: 0.09
+        opacity: 0.19 // Increased by 10% (0.09 -> 0.19)
       }
     ];
 
