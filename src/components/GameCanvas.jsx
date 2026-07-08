@@ -2827,13 +2827,14 @@ export default function GameCanvas({
             });
             
             const myPlayer = players.find(p => p.socketId === socket?.id);
+            const baseDmg = bullet.damage || 50;
             if (closestPlayer && myPlayer && closestPlayer.socketId === myPlayer.socketId) {
-              takeDamage(50); // Direct hit!
+              takeDamage(baseDmg); // Direct hit!
             } else {
-              takeDamage(25); // Teammate splash damage!
+              takeDamage(baseDmg * 0.5); // Teammate splash damage!
             }
           } else {
-            takeDamage(50);
+            takeDamage(bullet.damage || 50);
           }
           state.bullets = state.bullets.filter(b => b.id !== bullet.id);
         }
@@ -3204,7 +3205,8 @@ export default function GameCanvas({
       letter,
       x: cruiser.x,
       y: cruiser.y + 15,
-      speed: 1.5
+      speed: 1.5,
+      damage: 25 // Cruiser bullet damage: 25
     };
 
     state.bullets.push(bullet);
@@ -3455,6 +3457,8 @@ export default function GameCanvas({
     const startX = state.bossObj.x;
     const startY = state.bossObj.y + 40;
     const baseAngle = Math.atan2(window.innerHeight - 80 - startY, destX - startX);
+    const isMiniBoss = state.bossObj.type === 'mini_boss';
+    const bossDamage = isMiniBoss ? 35 : 50; // Mini-boss: 35, Major boss: 50
 
     // Void Emperor (Wave 100) fires a triple spread of letter bullets
     if (state.wave >= 100) {
@@ -3473,7 +3477,8 @@ export default function GameCanvas({
           speed: bSpeed,
           vx: Math.cos(angle) * bSpeed,
           vy: Math.sin(angle) * bSpeed,
-          type: 'boss_spiral'
+          type: 'boss_spiral',
+          damage: bossDamage
         };
         state.bullets.push(bulletObj);
         spawnedBullets.push(bulletObj);
@@ -3510,7 +3515,8 @@ export default function GameCanvas({
         speed: bSpeed,
         vx: Math.cos(baseAngle) * bSpeed,
         vy: Math.sin(baseAngle) * bSpeed,
-        type: isTemporal ? 'temporal' : 'boss_standard'
+        type: isTemporal ? 'temporal' : 'boss_standard',
+        damage: bossDamage
       };
       
       state.bullets.push(bullet);
