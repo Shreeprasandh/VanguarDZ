@@ -11,9 +11,11 @@ export default function MainMenu({
   onJoinRoom,
   onOpenLeaderboard,
   onOpenEditProfile,
-  onOpenStory
+  onOpenStory,
+  maxCheckpoint = 0
 }) {
   const [showTeamOptions, setShowTeamOptions] = useState(false);
+  const [showSoloCheckpoints, setShowSoloCheckpoints] = useState(false);
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [hoveredBtn, setHoveredBtn] = useState(null); // 'solo', 'multi', 'leader', 'back', 'create', 'join'
 
@@ -347,7 +349,7 @@ export default function MainMenu({
           </div>
 
           {/* Main Buttons Block */}
-          {!showTeamOptions ? (
+          {!showTeamOptions && !showSoloCheckpoints ? (
             <div 
               className={isFirstLoad ? 'boot-ui-animate' : ''} 
               style={{ 
@@ -364,7 +366,7 @@ export default function MainMenu({
                     className="minimal-text-btn"
                     onMouseEnter={() => setHoveredBtn('solo')}
                     onMouseLeave={() => setHoveredBtn(null)}
-                    onClick={() => { handleButtonClick(); onStartSolo(); }}
+                    onClick={() => { handleButtonClick(); setShowSoloCheckpoints(true); }}
                   >
                     Solo
                   </button>
@@ -396,6 +398,60 @@ export default function MainMenu({
                     onClick={() => { handleButtonClick(); onOpenLeaderboard(); }}
                   >
                     Leaderboard
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : showSoloCheckpoints ? (
+            <div className="checkpoint-menu-container" style={{ width: '100%' }}>
+              <div className="menu-item-row">
+                <div className="minimal-btn-wrapper">
+                  {renderPointer('new_mission')}
+                  <button 
+                    className="minimal-text-btn"
+                    onMouseEnter={() => setHoveredBtn('new_mission')}
+                    onMouseLeave={() => setHoveredBtn(null)}
+                    onClick={() => { handleButtonClick(); onStartSolo(1); }}
+                  >
+                    New Mission
+                  </button>
+                </div>
+              </div>
+              
+              <div className="checkpoint-title-small">Saved Mission</div>
+              
+              <div className="checkpoints-grid">
+                {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(val => {
+                  const isUnlocked = val <= maxCheckpoint;
+                  return (
+                    <button
+                      key={val}
+                      onClick={() => {
+                        if (isUnlocked) {
+                          handleButtonClick();
+                          onStartSolo(val === 100 ? 100 : val + 1);
+                        }
+                      }}
+                      className={`checkpoint-box ${isUnlocked ? 'unlocked' : ''}`}
+                      title={isUnlocked ? `Continue from Wave ${val === 100 ? 100 : val + 1}` : 'Checkpoint locked'}
+                    >
+                      {val}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="menu-item-row" style={{ marginTop: '1.5rem' }}>
+                <div className="minimal-btn-wrapper">
+                  {renderPointer('back_solo')}
+                  <button 
+                    className="minimal-text-btn"
+                    style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.3)', letterSpacing: '2px' }}
+                    onMouseEnter={() => setHoveredBtn('back_solo')}
+                    onMouseLeave={() => setHoveredBtn(null)}
+                    onClick={() => { handleButtonClick(); setShowSoloCheckpoints(false); }}
+                  >
+                    Back
                   </button>
                 </div>
               </div>

@@ -909,3 +909,171 @@ body::-webkit-scrollbar,
 .pulse-fast {
   animation: pulse-fast 1.5s infinite ease-in-out;
 }
+
+/* Authentication Layout & Checkpoints Grid */
+.login-page-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 2rem 5rem;
+  gap: 6rem;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.login-page-container.fade-out {
+  opacity: 0;
+  transform: scale(0.97);
+  pointer-events: none;
+}
+
+.story-column {
+  flex: 1.2;
+  max-width: 480px;
+  text-align: left;
+  animation: slideInLeft 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.login-column {
+  flex: 0.8;
+  max-width: 380px;
+  width: 100%;
+  animation: slideInRight 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideInLeft {
+  0% { opacity: 0; transform: translateX(-40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  0% { opacity: 0; transform: translateX(40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.login-toggle-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 1.2rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.login-toggle-text:hover {
+  color: var(--neon-blue);
+}
+
+/* Checkpoint Selection Grid */
+.checkpoint-menu-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1.5rem;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.checkpoint-title-small {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-top: 1.8rem;
+  margin-bottom: 0.9rem;
+  opacity: 0.75;
+}
+
+.checkpoints-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.8rem;
+  max-width: 320px;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 480px) {
+  .checkpoints-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.checkpoint-box {
+  width: 50px;
+  height: 50px;
+  background: rgba(5, 5, 8, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.2);
+  cursor: not-allowed;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  opacity: 0.25;
+}
+
+.checkpoint-box.unlocked {
+  opacity: 1;
+  color: var(--neon-blue);
+  border-color: var(--neon-blue);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(74, 144, 226, 0.15);
+}
+
+.checkpoint-box.unlocked:hover {
+  transform: translateY(-2px) scale(1.08);
+  box-shadow: 0 0 15px var(--neon-blue);
+  background: rgba(74, 144, 226, 0.06);
+}
+
+/* Local Auto-save Notification Overlay */
+.autosave-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(5, 5, 8, 0.95);
+  border: 1px solid var(--neon-green);
+  color: #ffffff;
+  padding: 0.75rem 2rem;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  z-index: 10000;
+  box-shadow: 0 0 20px rgba(46, 189, 89, 0.3);
+  animation: slideUpToast 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes slideUpToast {
+  0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+}
+
+@media (max-width: 900px) {
+  .login-page-container {
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 2rem;
+  }
+  .story-column {
+    display: none;
+  }
+}
+

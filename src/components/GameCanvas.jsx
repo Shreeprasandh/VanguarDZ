@@ -29,7 +29,8 @@ export default function GameCanvas({
   equippedSkills,
   initialWave,
   initialScore,
-  onDockStart
+  onDockStart,
+  onSaveCheckpoint
 }) {
   const getColorHex = (colorName) => {
     if (colorName === 'red') return '#cf4042'; // Muted Crimson
@@ -3664,6 +3665,10 @@ export default function GameCanvas({
       createExplosion(x, y, '#ff1111', 40, true);
     }
 
+    if (!isMultiplayer && waveReached >= 100 && onSaveCheckpoint) {
+      onSaveCheckpoint(100);
+    }
+
     setTimeout(() => {
       onGameOver(finalScore, waveReached);
     }, 1500);
@@ -5202,6 +5207,11 @@ export default function GameCanvas({
             createExplosion(shipX - 20, shipY, '#cbd5e1', 12);
             createExplosion(shipX + 20, shipY, '#cbd5e1', 12);
             state.hasPuffedSteam = true;
+            
+            // Checkpoint Auto-Save Trigger
+            if (!isMultiplayer && state.wave % 10 === 0 && onSaveCheckpoint) {
+              onSaveCheckpoint(state.wave);
+            }
           }
         }
       });

@@ -11,6 +11,7 @@ import StoryModal from './components/StoryModal';
 import DockingStation from './components/DockingStation';
 import InfoPopup from './components/InfoPopup';
 import { Analytics } from '@vercel/analytics/react';
+import { loginPilot, registerPilot, saveCheckpoint } from './game/supabase';
 
 export default function App() {
   // Profile settings (persisted in localStorage)
@@ -38,6 +39,17 @@ export default function App() {
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [muted, setMuted] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+
+  // Authentication & Checkpoints State
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginVisible, setLoginVisible] = useState(true);
+  const [maxCheckpoint, setMaxCheckpoint] = useState(0);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [autoSaveToast, setAutoSaveToast] = useState(false);
 
   // Multiplayer room state
   const [isMultiplayer, setIsMultiplayer] = useState(false);
@@ -346,9 +358,56 @@ export default function App() {
     }, 500);
   };
 
-  const handleStartSolo = () => {
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    if (!loginUsername || !loginPassword) {
+      setAuthError('All fields are required.');
+      return;
+    }
+    setAuthError('');
+    setAuthLoading(true);
+    try {
+      if (isRegisterMode) {
+        const res = await registerPilot(loginUsername, loginPassword);
+        setUsername(res.username);
+        localStorage.setItem('cybertype_username', res.username);
+        setMaxCheckpoint(0);
+      } else {
+        const res = await loginPilot(loginUsername, loginPassword);
+        setUsername(res.username);
+        localStorage.setItem('cybertype_username', res.username);
+        setMaxCheckpoint(res.maxCheckpoint);
+      }
+      
+      setLoginVisible(false);
+      setTimeout(() => {
+        setIsLoggedIn(true);
+      }, 500);
+      GameAudio.play('click');
+    } catch (err) {
+      console.error(err);
+      setAuthError(err.message || 'Authentication failed. Please verify your credentials.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSaveCheckpoint = async (checkpointLevel) => {
+    setAutoSaveToast(true);
+    setTimeout(() => setAutoSaveToast(false), 2500);
+    try {
+      await saveCheckpoint(username, checkpointLevel);
+      if (checkpointLevel > maxCheckpoint) {
+        setMaxCheckpoint(checkpointLevel);
+      }
+    } catch (e) {
+      console.error('Failed to save checkpoint:', e);
+    }
+  };
+
+  const handleStartSolo = (startingWave = 1) => {
     setIsMultiplayer(false);
-    setGameStats({ score: 0, wave: 1 });
+    setGameStats({ score: 0, wave: startingWave });
     changeScreenWithFade('playing');
   };
 
@@ -471,6 +530,7 @@ export default function App() {
   const renderScreen = () => {
     switch (screen) {
       case 'menu':
+        if (!isLoggedIn) return null;
         return (
           <MainMenu
             username={username}
@@ -484,6 +544,7 @@ export default function App() {
             onOpenEditProfile={() => setShowEditProfile(true)}
             onOpenStory={() => setShowStory(true)}
             onOpenInfo={() => setShowInfoPopup(true)}
+            maxCheckpoint={maxCheckpoint}
           />
         );
 
@@ -528,6 +589,7 @@ export default function App() {
             initialWave={gameStats.wave}
             initialScore={gameStats.score}
             onDockStart={handleDockStart}
+            onSaveCheckpoint={handleSaveCheckpoint}
           />
         );
 
@@ -597,6 +659,111 @@ export default function App() {
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
           </button>
+        </div>
+      )}
+
+      {/* Checkpoint Auto-Save Toast Overlay */}
+      {autoSaveToast && (
+        <div className="autosave-toast">
+          [ SYSTEM PROGRESS SECURED - CHECKPOINT AUTOSAVED ]
+        </div>
+      )}
+
+      {/* Login Screen Overlay */}
+      {screen === 'menu' && (loginVisible || !isLoggedIn) && (
+        <div className={`login-page-container ${!loginVisible ? 'fade-out' : ''}`}>
+          {/* Left Column: Story */}
+          <div className="story-column glass-panel" style={{ padding: '2.5rem', background: 'rgba(5, 5, 8, 0.85)', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '10px', left: '10px', width: '15px', height: '15px', borderTop: '2px solid rgba(255, 255, 255, 0.25)', borderLeft: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', top: '10px', right: '10px', width: '15px', height: '15px', borderTop: '2px solid rgba(255, 255, 255, 0.25)', borderRight: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', bottom: '10px', left: '10px', width: '15px', height: '15px', borderBottom: '2px solid rgba(255, 255, 255, 0.25)', borderLeft: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', bottom: '10px', right: '10px', width: '15px', height: '15px', borderBottom: '2px solid rgba(255, 255, 255, 0.25)', borderRight: '2px solid rgba(255, 255, 255, 0.25)' }} />
+
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 700, letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '1.5rem', color: '#ffffff', textAlign: 'center' }}>
+              THE VANGUARDZ INITIATIVE
+            </div>
+            
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '0.9rem', lineHeight: '1.7', color: '#d2d6e6', textAlign: 'justify', marginBottom: '1rem', fontWeight: 300 }}>
+              We watched our home world burn, a silent spark swallowed by the black ocean of space. The counselors told us that survival was enough, but to live on our knees is to fade into nothingness.
+            </p>
+            
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '0.9rem', lineHeight: '1.7', color: '#d2d6e6', textAlign: 'justify', marginBottom: '1rem', fontWeight: 300 }}>
+              Our friends carry the will to resist, but their ships are old, and their hearts are weary. If they engage the armada directly, they will be swept aside like space dust.
+            </p>
+
+            <p style={{ fontFamily: 'Georgia, serif', fontSize: '0.9rem', lineHeight: '1.7', color: '#d2d6e6', textAlign: 'justify', marginBottom: '1rem', fontWeight: 300 }}>
+              So you made a choice. Under a shroud of stardust, you slipped into the dark alone, steering your fighter into the belly of the hostile empire. You do not seek glory—only to clear a path out of the shadows.
+            </p>
+            
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', letterSpacing: '2px', textAlign: 'center', color: '#a2a6b8', marginTop: '1.5rem', fontStyle: 'italic', opacity: 0.85 }}>
+              ...we are the final shield. We will stand.
+            </div>
+          </div>
+
+          {/* Right Column: Central Login Box */}
+          <div className="login-column glass-panel" style={{ padding: '2.5rem', background: 'rgba(5, 5, 8, 0.85)', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '10px', left: '10px', width: '15px', height: '15px', borderTop: '2px solid rgba(255, 255, 255, 0.25)', borderLeft: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', top: '10px', right: '10px', width: '15px', height: '15px', borderTop: '2px solid rgba(255, 255, 255, 0.25)', borderRight: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', bottom: '10px', left: '10px', width: '15px', height: '15px', borderBottom: '2px solid rgba(255, 255, 255, 0.25)', borderLeft: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', bottom: '10px', right: '10px', width: '15px', height: '15px', borderBottom: '2px solid rgba(255, 255, 255, 0.25)', borderRight: '2px solid rgba(255, 255, 255, 0.25)' }} />
+
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.1rem', fontWeight: 600, color: '#ffffff', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '1.8rem', textAlign: 'center' }}>
+              {isRegisterMode ? 'REGISTER PILOT' : 'PILOT LOGIN'}
+            </div>
+
+            <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', textTransform: 'uppercase', fontFamily: 'var(--font-display)', letterSpacing: '1px', opacity: 0.8 }}>
+                Callsign (Username)
+              </div>
+              <input
+                type="text"
+                className="text-input"
+                placeholder="PILOT CALLSIGN"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                required
+              />
+
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginBottom: '0.4rem', textTransform: 'uppercase', fontFamily: 'var(--font-display)', letterSpacing: '1px', opacity: 0.8 }}>
+                Access Key (Password)
+              </div>
+              <input
+                type="password"
+                className="text-input"
+                placeholder="••••••••"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                required
+              />
+
+              {authError && (
+                <div style={{ color: '#ff4444', fontSize: '0.75rem', marginBottom: '1.2rem', fontFamily: 'var(--font-display)', letterSpacing: '0.5px' }}>
+                  {authError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="btn btn-primary"
+                style={{ width: '100%', padding: '0.8rem', fontSize: '0.85rem', letterSpacing: '2px', textTransform: 'uppercase' }}
+                disabled={authLoading}
+              >
+                {authLoading ? 'Verifying...' : isRegisterMode ? 'REGISTER & DEPLOY' : 'ESTABLISH LINK'}
+              </button>
+            </form>
+
+            <div style={{ textAlign: 'center' }}>
+              <span
+                onClick={() => {
+                  setAuthError('');
+                  setIsRegisterMode(!isRegisterMode);
+                }}
+                className="login-toggle-text"
+              >
+                {isRegisterMode ? 'Already registered? Pilot Login' : 'First deployment? Register callsign'}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
