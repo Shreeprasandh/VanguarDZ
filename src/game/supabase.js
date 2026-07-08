@@ -1,23 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = 'https://sonmafrtldaiymqirmuv.supabase.co';
+const supabaseAnonKey = 'sb_publishable_0V2SUUQ-xuuf9yPxAh3bMg_DfaRltt9';
 
-export const supabase = (supabaseUrl && supabaseAnonKey) 
-  ? createClient(supabaseUrl, supabaseAnonKey) 
-  : null;
-
-if (!supabase) {
-  console.warn("Vanguardz WARNING: Supabase keys not loaded. Configure your .env file and restart your Vite server.");
-} else {
-  console.info("Vanguardz INFO: Connected to Supabase security service.");
-}
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function registerPilot(username, password) {
   const normalizedUser = username.trim().toLowerCase();
   
   if (!supabase) {
-    throw new Error('Supabase configuration is missing. Please restart your Vite dev server to load your .env settings.');
+    throw new Error('Connection to the server failed. Please check your network connection.');
   }
 
   const email = `${normalizedUser}@vanguardz.local`;
@@ -51,7 +43,7 @@ export async function loginPilot(username, password) {
   const normalizedUser = username.trim().toLowerCase();
   
   if (!supabase) {
-    throw new Error('Supabase configuration is missing. Please restart your Vite dev server to load your .env settings.');
+    throw new Error('Connection to the server failed. Please check your network connection.');
   }
 
   const email = `${normalizedUser}@vanguardz.local`;
