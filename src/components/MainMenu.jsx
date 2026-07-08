@@ -433,7 +433,6 @@ export default function MainMenu({
                         }
                       }}
                       className={`checkpoint-box ${isUnlocked ? 'unlocked' : ''}`}
-                      title={isUnlocked ? `Continue from Wave ${val === 100 ? 100 : val + 1}` : 'Checkpoint locked'}
                     >
                       {val}
                     </button>

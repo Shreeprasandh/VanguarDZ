@@ -365,7 +365,6 @@ export default function Lobby({ roomCode, players, maxPlayers = 3, localPlayerId
                             }}
                             className={`console-pick-circle ${c} ${playerColor === c ? 'selected' : ''}`}
                             style={{ outline: 'none' }}
-                            title={`Select ${c.toUpperCase()} spacecraft signature`}
                           />
                         ))}
                       </div>

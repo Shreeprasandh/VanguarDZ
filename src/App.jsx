@@ -11,7 +11,7 @@ import StoryModal from './components/StoryModal';
 import DockingStation from './components/DockingStation';
 import InfoPopup from './components/InfoPopup';
 import { Analytics } from '@vercel/analytics/react';
-import { loginPilot, registerPilot, saveCheckpoint } from './game/supabase';
+import { loginPilot, registerPilot, saveCheckpoint, supabase } from './game/supabase';
 
 export default function App() {
   // Profile settings (persisted in localStorage)
@@ -51,6 +51,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [autoSaveToast, setAutoSaveToast] = useState(false);
   const [showAuthFailureModal, setShowAuthFailureModal] = useState(false);
+  const [showLogoutConfirmModal, setShowLogoutConfirmModal] = useState(false);
 
   // Multiplayer room state
   const [isMultiplayer, setIsMultiplayer] = useState(false);
@@ -80,6 +81,22 @@ export default function App() {
     checkDevice();
     window.addEventListener('resize', checkDevice);
     return () => window.removeEventListener('resize', checkDevice);
+  }, []);
+
+  // Restore session from sessionStorage on reload (persists until tab close)
+  useEffect(() => {
+    const savedSession = sessionStorage.getItem('vanguardz_session');
+    if (savedSession) {
+      try {
+        const data = JSON.parse(savedSession);
+        setUsername(data.username);
+        setMaxCheckpoint(data.maxCheckpoint || 0);
+        setIsLoggedIn(true);
+        setLoginVisible(false);
+      } catch (e) {
+        console.error('Error parsing session data:', e);
+      }
+    }
   }, []);
 
   // Sync local ship color continuously when the players array updates
@@ -374,6 +391,11 @@ export default function App() {
         localStorage.setItem('cybertype_username', res.username);
         setMaxCheckpoint(0);
 
+        sessionStorage.setItem('vanguardz_session', JSON.stringify({
+          username: res.username,
+          maxCheckpoint: 0
+        }));
+
         setLoginVisible(false);
         setTimeout(() => {
           setIsLoggedIn(true);
@@ -384,6 +406,11 @@ export default function App() {
         setUsername(res.username);
         localStorage.setItem('cybertype_username', res.username);
         setMaxCheckpoint(res.maxCheckpoint);
+
+        sessionStorage.setItem('vanguardz_session', JSON.stringify({
+          username: res.username,
+          maxCheckpoint: res.maxCheckpoint || 0
+        }));
 
         setLoginVisible(false);
         setTimeout(() => {
@@ -410,10 +437,44 @@ export default function App() {
       await saveCheckpoint(username, checkpointLevel);
       if (checkpointLevel > maxCheckpoint) {
         setMaxCheckpoint(checkpointLevel);
+        const savedSession = sessionStorage.getItem('vanguardz_session');
+        if (savedSession) {
+          try {
+            const data = JSON.parse(savedSession);
+            data.maxCheckpoint = checkpointLevel;
+            sessionStorage.setItem('vanguardz_session', JSON.stringify(data));
+          } catch (err) {
+            console.error('Session update error:', err);
+          }
+        }
       }
     } catch (e) {
       console.error('Failed to save checkpoint:', e);
     }
+  };
+
+  const handleLogout = async () => {
+    try {
+      sessionStorage.removeItem('vanguardz_session');
+      if (supabase) {
+        await supabase.auth.signOut();
+      }
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+    setIsLoggedIn(false);
+    setLoginVisible(true);
+    setMaxCheckpoint(0);
+    setScreen('menu');
+    setShowLogoutConfirmModal(false);
+    
+    // Clear overlay triggers
+    setShowEditProfile(false);
+    setShowLeaderboard(false);
+    setShowStory(false);
+    setShowInfoPopup(false);
+    
+    GameAudio.play('click');
   };
 
   const handleStartSolo = (startingWave = 1) => {
@@ -648,6 +709,17 @@ export default function App() {
           className={`system-actions ${isFirstLoad ? 'boot-ui-animate' : ''}`}
           style={{ opacity: isFirstLoad ? 0 : 1 }}
         >
+          {isLoggedIn && (
+            <button 
+              className="system-btn" 
+              onClick={() => { GameAudio.play('click'); setShowLogoutConfirmModal(true); }} 
+              style={{ opacity: 0.35 }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+              </svg>
+            </button>
+          )}
           <button 
             className="system-btn" 
             onClick={toggleMute} 
@@ -900,6 +972,91 @@ export default function App() {
                 }}
               >
                 Sign Up
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Logout Confirmation Modal Overlay */}
+      {showLogoutConfirmModal && (
+        <div 
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(2, 2, 4, 0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            backdropFilter: 'blur(8px)'
+          }}
+        >
+          <div 
+            className="glass-panel"
+            style={{
+              position: 'relative',
+              width: '90%',
+              maxWidth: '380px',
+              background: 'rgba(5, 5, 8, 0.98)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '2.2rem',
+              borderRadius: '4px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.95)',
+              textAlign: 'center',
+              animation: 'fadeIn 0.3s ease-out'
+            }}
+          >
+            {/* Corner Brackets */}
+            <div style={{ position: 'absolute', top: '10px', left: '10px', width: '15px', height: '15px', borderTop: '2px solid rgba(255, 255, 255, 0.25)', borderLeft: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', top: '10px', right: '10px', width: '15px', height: '15px', borderTop: '2px solid rgba(255, 255, 255, 0.25)', borderRight: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', bottom: '10px', left: '10px', width: '15px', height: '15px', borderBottom: '2px solid rgba(255, 255, 255, 0.25)', borderLeft: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', bottom: '10px', right: '10px', width: '15px', height: '15px', borderBottom: '2px solid rgba(255, 255, 255, 0.25)', borderRight: '2px solid rgba(255, 255, 255, 0.25)' }} />
+
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--neon-red)', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '1.2rem' }}>
+              TERMINATE SESSION
+            </div>
+
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', lineHeight: '1.6', color: '#a2a6b8', margin: '0 0 2.2rem 0', fontWeight: 300 }}>
+              Are you sure you want to disconnect your uplink and return to the authorization gateway?
+            </p>
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button 
+                className="btn" 
+                style={{ 
+                  flex: 1, 
+                  padding: '0.6rem', 
+                  fontSize: '0.75rem', 
+                  letterSpacing: '1.5px', 
+                  textTransform: 'uppercase',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: 'transparent',
+                  color: '#ffffff'
+                }}
+                onClick={() => {
+                  GameAudio.play('click');
+                  setShowLogoutConfirmModal(false);
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary" 
+                style={{ 
+                  flex: 1.2, 
+                  padding: '0.6rem', 
+                  fontSize: '0.75rem', 
+                  letterSpacing: '1.5px', 
+                  textTransform: 'uppercase'
+                }}
+                onClick={handleLogout}
+              >
+                Confirm
               </button>
             </div>
           </div>
