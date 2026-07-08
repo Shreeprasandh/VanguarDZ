@@ -62,7 +62,7 @@ export default function StoryModal({ onClose }) {
             font-size: 0.95rem;
             line-height: 1.8;
             color: #d2d6e6;
-            text-align: justify;
+            text-align: center;
             margin-bottom: 1.4rem;
             letter-spacing: 0.2px;
             font-weight: 300;

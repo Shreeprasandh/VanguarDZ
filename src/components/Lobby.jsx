@@ -505,7 +505,7 @@ export default function Lobby({ roomCode, players, maxPlayers = 3, localPlayerId
               PILOT REGISTRATION CONFLICT
             </div>
             
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.95rem', lineHeight: '1.7', color: '#dcdfe8', marginBottom: '2.5rem', fontWeight: 300, textAlign: 'justify' }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.95rem', lineHeight: '1.7', color: '#dcdfe8', marginBottom: '2.5rem', fontWeight: 300, textAlign: 'center' }}>
               {errorMessage}
             </p>
             

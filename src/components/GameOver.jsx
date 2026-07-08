@@ -144,7 +144,7 @@ export default function GameOver({ score, wave, isMultiplayer, teamPlayers, onRe
               fontSize: '1.05rem',
               lineHeight: '1.8',
               color: '#dcdfe8',
-              textAlign: 'justify',
+              textAlign: 'center',
               marginBottom: '2.5rem',
               letterSpacing: '0.5px',
               borderTop: '1px dashed rgba(255, 255, 255, 0.12)',

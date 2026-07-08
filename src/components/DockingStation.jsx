@@ -204,6 +204,7 @@ export default function DockingStation({
             display: flex;
             align-items: center;
             gap: 0.8rem;
+            width: 100%;
           }
 
           .ready-glow {
@@ -213,6 +214,7 @@ export default function DockingStation({
             color: #2ebd59;
             text-shadow: 0 0 4px rgba(46, 189, 89, 0.4);
             text-transform: uppercase;
+            white-space: nowrap;
           }
 
           .pending-glow {
@@ -221,6 +223,7 @@ export default function DockingStation({
             letter-spacing: 1px;
             color: rgba(255, 255, 255, 0.35);
             text-transform: uppercase;
+            white-space: nowrap;
           }
 
           .warn-banner {
@@ -405,9 +408,9 @@ export default function DockingStation({
                   return (
                     <div className="telemetry-row" key={p.socketId || pIdx}>
                       <div className="pilot-badge" style={{ justifyContent: 'space-between' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
                           {getShipSvg(p.color || 'blue')}
-                          <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.9rem', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                          <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.9rem', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {p.username}
                           </span>
                         </div>
@@ -439,9 +442,9 @@ export default function DockingStation({
               ) : (
                 <div className="telemetry-row">
                   <div className="pilot-badge" style={{ justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
                       {getShipSvg(selectedColor)}
-                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.9rem', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.9rem', color: '#ffffff', textTransform: 'uppercase', letterSpacing: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         SOLO UNIT (YOU)
                       </span>
                     </div>

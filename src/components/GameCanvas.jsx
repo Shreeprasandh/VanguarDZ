@@ -6099,7 +6099,7 @@ export default function GameCanvas({
               ABANDON MISSION
             </div>
             
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.95rem', lineHeight: '1.7', color: '#dcdfe8', marginBottom: '3rem', fontWeight: 300, textAlign: 'justify' }}>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.95rem', lineHeight: '1.7', color: '#dcdfe8', marginBottom: '3rem', fontWeight: 300, textAlign: 'center' }}>
               Are you sure you want to abort the current wave deployment and return to command? Unsaved score progress will be terminated.
             </p>
             
