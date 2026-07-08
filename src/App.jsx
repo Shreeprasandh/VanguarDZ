@@ -752,7 +752,7 @@ export default function App() {
               </button>
             </form>
 
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center', marginTop: '1.2rem' }}>
               <span
                 onClick={() => {
                   setAuthError('');
@@ -762,6 +762,9 @@ export default function App() {
               >
                 {isRegisterMode ? 'Already registered? Pilot Login' : 'First deployment? Register callsign'}
               </span>
+              <p style={{ fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.28)', margin: '0.8rem 0 0 0', letterSpacing: '0.5px', fontFamily: 'var(--font-display)', textTransform: 'uppercase', lineHeight: '1.4' }}>
+                New pilots must register a callsign to track saved checkpoints and secure leaderboards.
+              </p>
             </div>
           </div>
         </div>
