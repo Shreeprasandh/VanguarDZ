@@ -3040,7 +3040,7 @@ export default function GameCanvas({
       
       const rng = Math.random();
       const isKamikazeWave = state.wave >= 5;
-      const kamikazeChance = isKamikazeWave ? (state.wave < 40 ? 0.08 : 0.13) : 0.0;
+      const kamikazeChance = isKamikazeWave ? (state.wave < 40 ? 0.06 : 0.11) : 0.0; // Reduced spawn chance by 2% (0.08->0.06, 0.13->0.11)
 
       if (state.wave >= 16 && rng > 0.96) {
         type = 'replicator';
@@ -3058,7 +3058,7 @@ export default function GameCanvas({
       } else if (isKamikazeWave && rng > 0.70 - kamikazeChance && rng <= 0.70) {
         type = 'kamikaze';
         const waveScale = Math.min(1.0, (state.wave - 5) / 20); // 0.0 at wave 5, scaling to 1.0 at wave 25+
-        speed = (0.7 + waveScale * 0.6) + Math.random() * (0.2 + waveScale * 0.1);
+        speed = ((0.7 + waveScale * 0.6) + Math.random() * (0.2 + waveScale * 0.1)) * 0.8; // Speed reduced by 20%
       } else if (state.wave >= 3 && rng > 0.70 - kamikazeChance - 0.22 && rng <= 0.70 - kamikazeChance) {
         type = 'interceptor'; // Elite
         speed = 0.9 + Math.random() * 0.4;
