@@ -528,6 +528,8 @@ export default function App() {
   };
 
   const handleSaveCheckpoint = async (checkpointLevel) => {
+    if (isMultiplayer) return;
+
     setAutoSaveToast(true);
     setTimeout(() => setAutoSaveToast(false), 2500);
 
