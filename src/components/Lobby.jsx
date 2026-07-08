@@ -354,36 +354,51 @@ export default function Lobby({ roomCode, players, maxPlayers = 3, localPlayerId
                   {getShipSvg(playerColor)}
                   
                   {isLocal ? (
-                    <button
-                      onClick={onOpenProfileEdit}
-                      className="btn-profile-edit-lobby"
-                      style={{
-                        marginTop: '1rem',
-                        fontSize: '0.7rem',
-                        color: playerColor ? `var(--neon-${playerColor})` : 'var(--neon-blue)',
-                        border: playerColor ? `1px solid var(--neon-${playerColor})` : '1px solid rgba(255, 255, 255, 0.15)',
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        padding: '0.35rem 0.9rem',
-                        cursor: 'pointer',
-                        borderRadius: '2px',
-                        textTransform: 'uppercase',
-                        letterSpacing: '1.5px',
-                        fontFamily: 'var(--font-display)',
-                        transition: 'all 0.2s',
-                        outline: 'none',
-                        boxShadow: playerColor ? `0 0 6px rgba(${playerColor === 'red' ? '207, 64, 66' : playerColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.15)` : 'none'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = playerColor ? `rgba(${playerColor === 'red' ? '207, 64, 66' : playerColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.08)` : 'rgba(255, 255, 255, 0.08)';
-                        e.currentTarget.style.boxShadow = playerColor ? `0 0 10px var(--neon-${playerColor})` : '0 0 8px rgba(51, 204, 255, 0.2)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
-                        e.currentTarget.style.boxShadow = playerColor ? `0 0 6px rgba(${playerColor === 'red' ? '207, 64, 66' : playerColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.15)` : 'none';
-                      }}
-                    >
-                      PILOT IDENTITY
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '0.8rem', gap: '0.8rem' }}>
+                      <div style={{ display: 'flex', gap: '0.8rem' }}>
+                        {['blue', 'red', 'green'].map(c => (
+                          <button
+                            key={c}
+                            onClick={() => {
+                              GameAudio.play('click');
+                              onSelectColor(c);
+                            }}
+                            className={`console-pick-circle ${c} ${playerColor === c ? 'selected' : ''}`}
+                            style={{ outline: 'none' }}
+                            title={`Select ${c.toUpperCase()} spacecraft signature`}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        onClick={onOpenProfileEdit}
+                        className="btn-profile-edit-lobby"
+                        style={{
+                          fontSize: '0.7rem',
+                          color: playerColor ? `var(--neon-${playerColor})` : 'var(--neon-blue)',
+                          border: playerColor ? `1px solid var(--neon-${playerColor})` : '1px solid rgba(255, 255, 255, 0.15)',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          padding: '0.35rem 0.9rem',
+                          cursor: 'pointer',
+                          borderRadius: '2px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '1.5px',
+                          fontFamily: 'var(--font-display)',
+                          transition: 'all 0.2s',
+                          outline: 'none',
+                          boxShadow: playerColor ? `0 0 6px rgba(${playerColor === 'red' ? '207, 64, 66' : playerColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.15)` : 'none'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = playerColor ? `rgba(${playerColor === 'red' ? '207, 64, 66' : playerColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.08)` : 'rgba(255, 255, 255, 0.08)';
+                          e.currentTarget.style.boxShadow = playerColor ? `0 0 10px var(--neon-${playerColor})` : '0 0 8px rgba(51, 204, 255, 0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                          e.currentTarget.style.boxShadow = playerColor ? `0 0 6px rgba(${playerColor === 'red' ? '207, 64, 66' : playerColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.15)` : 'none';
+                        }}
+                      >
+                        Callsign / Weapon Loadout
+                      </button>
+                    </div>
                   ) : playerColor ? (
                     <span style={{ fontSize: '0.75rem', color: `var(--neon-${playerColor})`, textTransform: 'uppercase', fontWeight: 600, letterSpacing: '1px', marginTop: '1rem' }}>
                       {playerColor} Registered

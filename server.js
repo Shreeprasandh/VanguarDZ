@@ -543,6 +543,15 @@ wss.on('connection', (ws) => {
           break;
         }
 
+        case 'METEOR_WARNING': {
+          if (player.roomId) {
+            sendToRoom(player.roomId, {
+              type: 'METEOR_WARNING'
+            }, socketId);
+          }
+          break;
+        }
+
         case 'SYNC_POSITIONS': {
           if (player.roomId) {
             sendToRoom(player.roomId, {

@@ -1997,6 +1997,11 @@ export default function GameCanvas({
           state.meteorShowerTriggered = true;
           state.meteorShowerWarningTimer = 180; // 3 seconds warning alert
           GameAudio.play('meteor_warning');
+          if (isMultiplayer && socket) {
+            socket.send(JSON.stringify({
+              type: 'METEOR_WARNING'
+            }));
+          }
         }
       }
 

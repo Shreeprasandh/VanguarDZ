@@ -266,7 +266,8 @@ class AudioManager {
       if (soundName === 'shield_activate') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
@@ -284,7 +285,8 @@ class AudioManager {
     if (soundName === 'shield_hit') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const osc1 = ctx.createOscillator();
         const osc2 = ctx.createOscillator();
         const gain1 = ctx.createGain();
@@ -316,7 +318,8 @@ class AudioManager {
     if (soundName === 'meteor_warning') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         
@@ -350,7 +353,8 @@ class AudioManager {
     if (soundName === 'meteor_explosion') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const osc = ctx.createOscillator();
         const noise = ctx.createOscillator();
         const filter = ctx.createBiquadFilter();
@@ -389,7 +393,8 @@ class AudioManager {
     if (soundName === 'enemy_shield_shatter') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         const osc1 = ctx.createOscillator();
         const osc2 = ctx.createOscillator();
@@ -426,7 +431,8 @@ class AudioManager {
     if (soundName === 'explosion_drone') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -450,7 +456,8 @@ class AudioManager {
     if (soundName === 'explosion_interceptor') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         const osc = ctx.createOscillator();
         const sweep = ctx.createOscillator();
@@ -482,7 +489,8 @@ class AudioManager {
     if (soundName === 'explosion_kamikaze') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         const osc = ctx.createOscillator();
         const noise = ctx.createOscillator();
@@ -519,7 +527,8 @@ class AudioManager {
     if (soundName === 'explosion_cruiser') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         
         const osc1 = ctx.createOscillator();
@@ -556,7 +565,8 @@ class AudioManager {
     if (soundName === 'explosion_linker') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -588,7 +598,8 @@ class AudioManager {
     if (soundName === 'anomaly_pulse') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -625,7 +636,8 @@ class AudioManager {
     if (soundName === 'boss_laser') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -655,7 +667,8 @@ class AudioManager {
     if (soundName === 'boss_hit') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -679,7 +692,8 @@ class AudioManager {
     if (soundName === 'boss_explosion') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         
         for (let i = 0; i < 3; i++) {
@@ -713,7 +727,8 @@ class AudioManager {
     if (soundName === 'laserPlayer') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -733,7 +748,8 @@ class AudioManager {
     if (soundName === 'laser') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -753,7 +769,8 @@ class AudioManager {
     if (soundName === 'warning') {
       if (this.muted) return;
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = this.sfxAudioCtx;
+        if (!ctx) return;
         const t = ctx.currentTime;
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
