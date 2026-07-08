@@ -3458,7 +3458,7 @@ export default function GameCanvas({
     const startY = state.bossObj.y + 40;
     const baseAngle = Math.atan2(window.innerHeight - 80 - startY, destX - startX);
     const isMiniBoss = state.bossObj.type === 'mini_boss';
-    const bossDamage = isMiniBoss ? 35 : 50; // Mini-boss: 35, Major boss: 50
+    const bossDamage = isMiniBoss ? 25 : 35; // Mini-boss: 25, Major boss: 35
 
     // Void Emperor (Wave 100) fires a triple spread of letter bullets
     if (state.wave >= 100) {

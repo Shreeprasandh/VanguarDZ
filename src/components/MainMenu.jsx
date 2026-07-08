@@ -507,8 +507,8 @@ export default function MainMenu({
                     }}
                     placeholder="CODE"
                     maxLength={4}
-                    value={roomCodeInput}
-                    onChange={(e) => setRoomCodeInput(e.target.value.replace(/[^a-zA-Z]/g, '').substring(0, 4))}
+                    value={roomCodeInput.toUpperCase()}
+                    onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 4))}
                   />
                   <button 
                     type="submit" 
