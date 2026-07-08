@@ -12,36 +12,43 @@ export async function registerPilot(username, password) {
     throw new Error('Connection to the server failed. Please check your network connection.');
   }
 
-  const email = `${normalizedUser}@vanguardz.com`;
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+  // 1. Check if username already exists
+  const { data: existingUser, error: checkError } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('username', normalizedUser)
+    .maybeSingle();
 
-  if (authError) {
-    let msg = authError.message || 'Registration failed.';
-    msg = msg.replace(/email/gi, 'Callsign');
-    msg = msg.replace(/[a-zA-Z0-9._%+-]+@vanguardz\.[a-zA-Z]+/g, username);
-    throw new Error(msg);
+  if (checkError) {
+    throw new Error('Failed to verify callsign availability: ' + checkError.message);
   }
 
-  const user = authData.user;
-  if (!user) throw new Error('Registration failed');
+  if (existingUser) {
+    throw new Error('Callsign already registered. Choose a different callsign.');
+  }
 
-  // Insert profile
-  const { error: profileError } = await supabase
+  // 2. Generate UUID client-side for the ID column
+  const uuid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+
+  // 3. Insert new pilot profile with password
+  const { error: insertError } = await supabase
     .from('profiles')
     .insert({
-      id: user.id,
-      username: username,
+      id: uuid,
+      username: normalizedUser,
+      password: password,
       max_unlocked_checkpoint: 0
     });
 
-  if (profileError) {
-    console.error('Profile registration write error:', profileError);
+  if (insertError) {
+    throw new Error('Registration failed: ' + insertError.message);
   }
 
-  return { username, maxCheckpoint: 0 };
+  return { username: normalizedUser, maxCheckpoint: 0 };
 }
 
 export async function loginPilot(username, password) {
@@ -51,55 +58,61 @@ export async function loginPilot(username, password) {
     throw new Error('Connection to the server failed. Please check your network connection.');
   }
 
-  const email = `${normalizedUser}@vanguardz.com`;
-  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+  // 1. Retrieve profile matching username
+  const { data: profile, error: fetchError } = await supabase
+    .from('profiles')
+    .select('username, password, max_unlocked_checkpoint')
+    .eq('username', normalizedUser)
+    .maybeSingle();
 
-  if (authError) {
-    let msg = authError.message || 'Authentication failed.';
-    msg = msg.replace(/email/gi, 'Callsign');
-    msg = msg.replace(/[a-zA-Z0-9._%+-]+@vanguardz\.[a-zA-Z]+/g, username);
-    throw new Error(msg);
+  if (fetchError) {
+    throw new Error('Authentication failed: ' + fetchError.message);
   }
 
-  // Retrieve profile
-  const { data: profileData, error: profileError } = await supabase
-    .from('profiles')
-    .select('max_unlocked_checkpoint')
-    .eq('id', authData.user.id)
-    .single();
+  if (!profile) {
+    throw new Error('The entered callsign does not match any active pilot profiles.');
+  }
 
-  if (profileError) {
-    console.error('Error fetching profile checkpoint:', profileError);
-    return { username, maxCheckpoint: 0 };
+  // 2. Validate password
+  if (profile.password && profile.password !== password) {
+    throw new Error('The access key entered is incorrect.');
+  }
+
+  // 3. If profile exists but didn't have password saved yet, save it now (backward compatibility)
+  if (!profile.password) {
+    await supabase
+      .from('profiles')
+      .update({ password: password })
+      .eq('username', normalizedUser);
   }
 
   return { 
-    username, 
-    maxCheckpoint: profileData ? profileData.max_unlocked_checkpoint : 0 
+    username: normalizedUser, 
+    maxCheckpoint: profile.max_unlocked_checkpoint || 0 
   };
 }
 
 export async function saveCheckpoint(username, checkpointLevel) {
-  if (!supabase) return;
+  if (!supabase || !username) return;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  const normalizedUser = username.trim().toLowerCase();
 
-  const { data: profile } = await supabase
+  // 1. Fetch current max checkpoint from DB
+  const { data: profile, error: fetchError } = await supabase
     .from('profiles')
     .select('max_unlocked_checkpoint')
-    .eq('id', user.id)
-    .single();
+    .eq('username', normalizedUser)
+    .maybeSingle();
 
-  const currentMax = profile ? profile.max_unlocked_checkpoint : 0;
+  if (fetchError || !profile) return;
 
+  const currentMax = profile.max_unlocked_checkpoint || 0;
+
+  // 2. Update if new level is higher
   if (checkpointLevel > currentMax) {
     await supabase
       .from('profiles')
       .update({ max_unlocked_checkpoint: checkpointLevel })
-      .eq('id', user.id);
+      .eq('username', normalizedUser);
   }
 }

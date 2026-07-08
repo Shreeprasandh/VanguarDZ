@@ -83,7 +83,7 @@ export default function App() {
     return () => window.removeEventListener('resize', checkDevice);
   }, []);
 
-  // Restore session from sessionStorage on reload (persists until tab close)
+  // Restore session from sessionStorage, local storage backup, or guest memory on mount
   useEffect(() => {
     const savedSession = sessionStorage.getItem('vanguardz_session');
     if (savedSession) {
@@ -93,10 +93,57 @@ export default function App() {
         setMaxCheckpoint(data.maxCheckpoint || 0);
         setIsLoggedIn(true);
         setLoginVisible(false);
+        return;
       } catch (e) {
         console.error('Error parsing session data:', e);
       }
     }
+
+    const checkActiveSession = async () => {
+      const lastUsername = localStorage.getItem('cybertype_username');
+      const isLoggedInFlag = localStorage.getItem('vanguardz_logged_in');
+      
+      if (lastUsername && (isLoggedInFlag === 'true' || lastUsername.toUpperCase().startsWith('GUEST'))) {
+        const localKey = `vanguardz_checkpoint_${lastUsername.toLowerCase()}`;
+        const localMax = parseInt(localStorage.getItem(localKey) || '0', 10);
+        let bestCheckpoint = localMax;
+        
+        const isGuest = lastUsername.toUpperCase().startsWith('GUEST');
+        if (!isGuest && supabase) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('max_unlocked_checkpoint')
+              .eq('username', lastUsername.toLowerCase())
+              .maybeSingle();
+              
+            if (profile) {
+              const serverMax = profile.max_unlocked_checkpoint || 0;
+              bestCheckpoint = Math.max(serverMax, localMax);
+              
+              if (localMax > serverMax) {
+                saveCheckpoint(lastUsername, localMax).catch(err => 
+                  console.error('Failed to sync local checkpoint to server:', err)
+                );
+              }
+            }
+          } catch (err) {
+            console.error('Failed to check database checkpoint on mount:', err);
+          }
+        }
+        
+        setUsername(lastUsername);
+        setMaxCheckpoint(bestCheckpoint);
+        setIsLoggedIn(true);
+        setLoginVisible(false);
+        sessionStorage.setItem('vanguardz_session', JSON.stringify({
+          username: lastUsername,
+          maxCheckpoint: bestCheckpoint
+        }));
+      }
+    };
+
+    checkActiveSession();
   }, []);
 
   // Sync local ship color continuously when the players array updates
@@ -376,6 +423,27 @@ export default function App() {
     }, 500);
   };
 
+  const handleGuestLogin = () => {
+    const guestUser = 'GUEST_PILOT';
+    setUsername(guestUser);
+    localStorage.setItem('cybertype_username', guestUser);
+    
+    const localKey = `vanguardz_checkpoint_${guestUser.toLowerCase()}`;
+    const localMax = parseInt(localStorage.getItem(localKey) || '0', 10);
+    setMaxCheckpoint(localMax);
+
+    sessionStorage.setItem('vanguardz_session', JSON.stringify({
+      username: guestUser,
+      maxCheckpoint: localMax
+    }));
+
+    setLoginVisible(false);
+    setTimeout(() => {
+      setIsLoggedIn(true);
+    }, 500);
+    GameAudio.play('click');
+  };
+
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
     if (!loginUsername || !loginPassword) {
@@ -389,11 +457,22 @@ export default function App() {
         const res = await registerPilot(loginUsername, loginPassword);
         setUsername(res.username);
         localStorage.setItem('cybertype_username', res.username);
-        setMaxCheckpoint(0);
+        localStorage.setItem('vanguardz_logged_in', 'true');
+        
+        // Merge offline progress if exists on this device
+        const localKey = `vanguardz_checkpoint_${res.username.toLowerCase()}`;
+        const localMax = parseInt(localStorage.getItem(localKey) || '0', 10);
+        setMaxCheckpoint(localMax);
+
+        if (localMax > 0) {
+          saveCheckpoint(res.username, localMax).catch(err => 
+            console.error('Failed to sync local checkpoint to server:', err)
+          );
+        }
 
         sessionStorage.setItem('vanguardz_session', JSON.stringify({
           username: res.username,
-          maxCheckpoint: 0
+          maxCheckpoint: localMax
         }));
 
         setLoginVisible(false);
@@ -405,11 +484,24 @@ export default function App() {
         const res = await loginPilot(loginUsername, loginPassword);
         setUsername(res.username);
         localStorage.setItem('cybertype_username', res.username);
-        setMaxCheckpoint(res.maxCheckpoint);
+        localStorage.setItem('vanguardz_logged_in', 'true');
+        
+        // Use the highest of the server checkpoint or the local storage backup
+        const localKey = `vanguardz_checkpoint_${res.username.toLowerCase()}`;
+        const localMax = parseInt(localStorage.getItem(localKey) || '0', 10);
+        const bestCheckpoint = Math.max(res.maxCheckpoint || 0, localMax);
+        setMaxCheckpoint(bestCheckpoint);
+
+        // If local backup was higher than what server returned, sync it back to server
+        if (localMax > (res.maxCheckpoint || 0)) {
+          saveCheckpoint(res.username, localMax).catch(err => 
+            console.error('Failed to sync local checkpoint to server:', err)
+          );
+        }
 
         sessionStorage.setItem('vanguardz_session', JSON.stringify({
           username: res.username,
-          maxCheckpoint: res.maxCheckpoint || 0
+          maxCheckpoint: bestCheckpoint
         }));
 
         setLoginVisible(false);
@@ -420,10 +512,15 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      if (!isRegisterMode) {
+      const errMsg = err.message || '';
+      setAuthError(errMsg);
+      if (!isRegisterMode && !errMsg.toLowerCase().includes('rate limit')) {
         setShowAuthFailureModal(true);
+      } else if (!isRegisterMode) {
+        // If it's a rate limit error during login, keep it in the form to display clearly
+        setAuthError(errMsg);
       } else {
-        setAuthError(err.message || 'Registration failed. Choose a different callsign.');
+        setAuthError(errMsg || 'Registration failed. Choose a different callsign.');
       }
     } finally {
       setAuthLoading(false);
@@ -433,8 +530,23 @@ export default function App() {
   const handleSaveCheckpoint = async (checkpointLevel) => {
     setAutoSaveToast(true);
     setTimeout(() => setAutoSaveToast(false), 2500);
+
+    if (!username) return;
+
+    // Always backup to localStorage for the current pilot
+    const localKey = `vanguardz_checkpoint_${username.toLowerCase()}`;
+    const localMax = parseInt(localStorage.getItem(localKey) || '0', 10);
+    if (checkpointLevel > localMax) {
+      localStorage.setItem(localKey, checkpointLevel.toString());
+    }
+
     try {
-      await saveCheckpoint(username, checkpointLevel);
+      // Only call Supabase if it's not a guest account
+      const isGuest = username.toUpperCase().startsWith('GUEST');
+      if (!isGuest) {
+        await saveCheckpoint(username, checkpointLevel);
+      }
+      
       if (checkpointLevel > maxCheckpoint) {
         setMaxCheckpoint(checkpointLevel);
         const savedSession = sessionStorage.getItem('vanguardz_session');
@@ -449,16 +561,28 @@ export default function App() {
         }
       }
     } catch (e) {
-      console.error('Failed to save checkpoint:', e);
+      console.error('Failed to save checkpoint to server:', e);
+      // Fallback: update UI state even if server fails
+      if (checkpointLevel > maxCheckpoint) {
+        setMaxCheckpoint(checkpointLevel);
+        const savedSession = sessionStorage.getItem('vanguardz_session');
+        if (savedSession) {
+          try {
+            const data = JSON.parse(savedSession);
+            data.maxCheckpoint = checkpointLevel;
+            sessionStorage.setItem('vanguardz_session', JSON.stringify(data));
+          } catch (err) {
+            console.error('Session update error:', err);
+          }
+        }
+      }
     }
   };
 
   const handleLogout = async () => {
     try {
       sessionStorage.removeItem('vanguardz_session');
-      if (supabase) {
-        await supabase.auth.signOut();
-      }
+      localStorage.removeItem('vanguardz_logged_in');
     } catch (e) {
       console.error('Logout error:', e);
     }
@@ -835,6 +959,42 @@ export default function App() {
               </button>
             </form>
 
+            <div style={{ display: 'flex', alignItems: 'center', margin: '1.2rem 0 0.8rem 0' }}>
+              <hr style={{ flex: 1, border: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }} />
+              <span style={{ fontSize: '0.65rem', color: 'rgba(255, 255, 255, 0.3)', margin: '0 0.5rem', fontFamily: 'var(--font-display)' }}>OR</span>
+              <hr style={{ flex: 1, border: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }} />
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ 
+                width: '100%', 
+                padding: '0.8rem', 
+                fontSize: '0.85rem', 
+                letterSpacing: '2px', 
+                textTransform: 'uppercase',
+                background: 'rgba(74, 144, 226, 0.1)',
+                border: '1px solid var(--neon-blue)',
+                color: 'var(--neon-blue)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                borderRadius: '4px',
+                boxShadow: '0 0 5px rgba(74, 144, 226, 0.2)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(74, 144, 226, 0.2)';
+                e.currentTarget.style.boxShadow = '0 0 12px rgba(74, 144, 226, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(74, 144, 226, 0.1)';
+                e.currentTarget.style.boxShadow = '0 0 5px rgba(74, 144, 226, 0.2)';
+              }}
+              onClick={handleGuestLogin}
+            >
+              PLAY OFFLINE (GUEST MODE)
+            </button>
+
             <div style={{ textAlign: 'center', marginTop: '1.2rem' }}>
               <span
                 onClick={() => {
@@ -974,6 +1134,33 @@ export default function App() {
                 Sign Up
               </button>
             </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', margin: '1rem 0 0.8rem 0' }}>
+              <hr style={{ flex: 1, border: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }} />
+              <span style={{ fontSize: '0.6rem', color: 'rgba(255, 255, 255, 0.25)', margin: '0 0.5rem', fontFamily: 'var(--font-display)' }}>OR</span>
+              <hr style={{ flex: 1, border: 'none', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }} />
+            </div>
+
+            <button 
+              className="btn" 
+              style={{ 
+                width: '100%', 
+                padding: '0.6rem', 
+                fontSize: '0.75rem', 
+                letterSpacing: '1.5px', 
+                textTransform: 'uppercase',
+                border: '1px solid var(--neon-blue)',
+                background: 'rgba(74, 144, 226, 0.05)',
+                color: 'var(--neon-blue)',
+                cursor: 'pointer'
+              }}
+              onClick={() => {
+                setShowAuthFailureModal(false);
+                handleGuestLogin();
+              }}
+            >
+              Play Offline (Guest Mode)
+            </button>
           </div>
         </div>
       )}
