@@ -50,6 +50,7 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [autoSaveToast, setAutoSaveToast] = useState(false);
+  const [showAuthFailureModal, setShowAuthFailureModal] = useState(false);
 
   // Multiplayer room state
   const [isMultiplayer, setIsMultiplayer] = useState(false);
@@ -372,21 +373,31 @@ export default function App() {
         setUsername(res.username);
         localStorage.setItem('cybertype_username', res.username);
         setMaxCheckpoint(0);
+
+        setLoginVisible(false);
+        setTimeout(() => {
+          setIsLoggedIn(true);
+        }, 500);
+        GameAudio.play('click');
       } else {
         const res = await loginPilot(loginUsername, loginPassword);
         setUsername(res.username);
         localStorage.setItem('cybertype_username', res.username);
         setMaxCheckpoint(res.maxCheckpoint);
+
+        setLoginVisible(false);
+        setTimeout(() => {
+          setIsLoggedIn(true);
+        }, 500);
+        GameAudio.play('click');
       }
-      
-      setLoginVisible(false);
-      setTimeout(() => {
-        setIsLoggedIn(true);
-      }, 500);
-      GameAudio.play('click');
     } catch (err) {
       console.error(err);
-      setAuthError(err.message || 'Authentication failed. Please verify your credentials.');
+      if (!isRegisterMode) {
+        setShowAuthFailureModal(true);
+      } else {
+        setAuthError(err.message || 'Registration failed. Choose a different callsign.');
+      }
     } finally {
       setAuthLoading(false);
     }
@@ -804,6 +815,95 @@ export default function App() {
         <InfoPopup
           onClose={() => setShowInfoPopup(false)}
         />
+      )}
+
+      {/* Authentication Failure Modal Popup */}
+      {showAuthFailureModal && (
+        <div 
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(2, 2, 4, 0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            backdropFilter: 'blur(8px)'
+          }}
+        >
+          <div 
+            className="glass-panel"
+            style={{
+              position: 'relative',
+              width: '90%',
+              maxWidth: '380px',
+              background: 'rgba(5, 5, 8, 0.98)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '2.2rem',
+              borderRadius: '4px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.95)',
+              textAlign: 'center',
+              animation: 'fadeIn 0.3s ease-out'
+            }}
+          >
+            {/* Corner Brackets */}
+            <div style={{ position: 'absolute', top: '10px', left: '10px', width: '15px', height: '15px', borderTop: '2px solid rgba(255, 255, 255, 0.25)', borderLeft: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', top: '10px', right: '10px', width: '15px', height: '15px', borderTop: '2px solid rgba(255, 255, 255, 0.25)', borderRight: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', bottom: '10px', left: '10px', width: '15px', height: '15px', borderBottom: '2px solid rgba(255, 255, 255, 0.25)', borderLeft: '2px solid rgba(255, 255, 255, 0.25)' }} />
+            <div style={{ position: 'absolute', bottom: '10px', right: '10px', width: '15px', height: '15px', borderBottom: '2px solid rgba(255, 255, 255, 0.25)', borderRight: '2px solid rgba(255, 255, 255, 0.25)' }} />
+
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.8rem', fontWeight: 600, color: 'var(--neon-red)', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '1.2rem' }}>
+              NO USER DETECTED
+            </div>
+
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', lineHeight: '1.6', color: '#a2a6b8', margin: '0 0 2.2rem 0', fontWeight: 300 }}>
+              The entered callsign and access key do not match any active pilot profiles in the database.
+            </p>
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button 
+                className="btn" 
+                style={{ 
+                  flex: 1, 
+                  padding: '0.6rem', 
+                  fontSize: '0.75rem', 
+                  letterSpacing: '1.5px', 
+                  textTransform: 'uppercase',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: 'transparent',
+                  color: '#ffffff'
+                }}
+                onClick={() => {
+                  GameAudio.play('click');
+                  setShowAuthFailureModal(false);
+                }}
+              >
+                Retry
+              </button>
+              <button 
+                className="btn btn-primary" 
+                style={{ 
+                  flex: 1.2, 
+                  padding: '0.6rem', 
+                  fontSize: '0.75rem', 
+                  letterSpacing: '1.5px', 
+                  textTransform: 'uppercase'
+                }}
+                onClick={() => {
+                  GameAudio.play('click');
+                  setIsRegisterMode(true);
+                  setShowAuthFailureModal(false);
+                }}
+              >
+                Sign Up
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Server Wakeup Overlay Modal */}

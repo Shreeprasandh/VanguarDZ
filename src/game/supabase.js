@@ -8,20 +8,16 @@ export const supabase = (supabaseUrl && supabaseAnonKey)
   : null;
 
 if (!supabase) {
-  console.warn("Vanguardz WARNING: Supabase keys not loaded. LocalStorage offline fallback active.");
+  console.warn("Vanguardz WARNING: Supabase keys not loaded. Configure your .env file and restart your Vite server.");
 } else {
   console.info("Vanguardz INFO: Connected to Supabase security service.");
 }
-
-const LOCAL_CHECKPOINT_KEY = 'vanguardz_local_checkpoint';
 
 export async function registerPilot(username, password) {
   const normalizedUser = username.trim().toLowerCase();
   
   if (!supabase) {
-    // Local fallback
-    localStorage.setItem(`${LOCAL_CHECKPOINT_KEY}_${normalizedUser}`, '0');
-    return { username, maxCheckpoint: 0, message: 'Local storage fallback active' };
+    throw new Error('Supabase configuration is missing. Please restart your Vite dev server to load your .env settings.');
   }
 
   const email = `${normalizedUser}@vanguardz.local`;
@@ -55,9 +51,7 @@ export async function loginPilot(username, password) {
   const normalizedUser = username.trim().toLowerCase();
   
   if (!supabase) {
-    // Local fallback
-    const saved = localStorage.getItem(`${LOCAL_CHECKPOINT_KEY}_${normalizedUser}`) || '0';
-    return { username, maxCheckpoint: parseInt(saved, 10) };
+    throw new Error('Supabase configuration is missing. Please restart your Vite dev server to load your .env settings.');
   }
 
   const email = `${normalizedUser}@vanguardz.local`;
@@ -87,16 +81,7 @@ export async function loginPilot(username, password) {
 }
 
 export async function saveCheckpoint(username, checkpointLevel) {
-  const normalizedUser = username.trim().toLowerCase();
-  
-  if (!supabase) {
-    const key = `${LOCAL_CHECKPOINT_KEY}_${normalizedUser}`;
-    const current = parseInt(localStorage.getItem(key) || '0', 10);
-    if (checkpointLevel > current) {
-      localStorage.setItem(key, checkpointLevel.toString());
-    }
-    return;
-  }
+  if (!supabase) return;
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
