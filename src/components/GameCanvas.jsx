@@ -3051,9 +3051,9 @@ export default function GameCanvas({
       } else if (state.wave >= 11 && rng > 0.84 && rng <= 0.91) {
         type = 'shield_linker';
         speed = 0.4 + Math.random() * 0.15;
-      } else if (state.wave >= 7 && rng > 0.70 && rng <= 0.84) {
+      } else if (state.wave >= 7 && rng > 0.76 && rng <= 0.84) {
         type = 'cruiser'; // General
-        speed = 0.3 + Math.random() * 0.2;
+        speed = 0.27 + Math.random() * 0.18; // Speed reduced by 10% (0.3 -> 0.27, 0.2 -> 0.18)
         hp = 2;
       } else if (isKamikazeWave && rng > 0.70 - kamikazeChance && rng <= 0.70) {
         type = 'kamikaze';
@@ -3206,7 +3206,7 @@ export default function GameCanvas({
       x: cruiser.x,
       y: cruiser.y + 15,
       speed: 1.5,
-      damage: 25 // Cruiser bullet damage: 25
+      damage: 15 // Cruiser bullet damage: 15
     };
 
     state.bullets.push(bullet);
