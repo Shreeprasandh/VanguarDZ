@@ -239,7 +239,7 @@ export default function DockingStation({
         `}</style>
 
         {/* Diagonal high-tech brackets */}
-        <div style={{ relative: 'position' }}>
+        <div style={{ position: 'relative' }}>
           <div style={{ position: 'absolute', top: '-10px', left: '-15px', width: '30px', height: '10px', borderTop: '1px solid rgba(255,255,255,0.15)', borderLeft: '1px solid rgba(255,255,255,0.15)' }} />
           <div style={{ position: 'absolute', top: '-10px', right: '-15px', width: '30px', height: '10px', borderTop: '1px solid rgba(255,255,255,0.15)', borderRight: '1px solid rgba(255,255,255,0.15)' }} />
           
