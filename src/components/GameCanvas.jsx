@@ -2197,8 +2197,8 @@ export default function GameCanvas({
       boss.shootTimer -= 1;
       
       if (boss.shootTimer <= 0) {
-        // Shoot single letter bullets or colored minions
-        const isMinion = Math.random() < 0.4;
+        // Shoot single letter bullets or colored minions (minion spawn rate reduced by 25%)
+        const isMinion = Math.random() < 0.3;
         if (isMinion) {
           spawnBossMinions();
         } else {
