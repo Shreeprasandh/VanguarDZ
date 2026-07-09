@@ -55,14 +55,13 @@ export default function GameCanvas({
     return true;
   };
 
-  // Calculate wave spawn count, dynamically scaling down by up to 25% on higher levels (wave 20+) to avoid overwhelming the player.
+  // Calculate wave spawn count, dynamically scaling down by up to 44% on higher levels (wave 20+) to avoid overwhelming the player.
+  // At wave 1: multiplier is 0.8.
+  // At wave 20+: multiplier is 0.8 * 0.56 = 0.45 (an additional 25% reduction from the previous 0.6 multiplier).
   const calculateWaveTotalToSpawn = (waveNum) => {
     const base = 10 + waveNum * 4;
-    // Scale down the multiplier from 0.8 (normal) down by 25% (i.e. to 0.6) on higher levels.
-    // At wave 1: multiplier is 0.8.
-    // At wave 20+: multiplier is 0.8 * 0.75 = 0.6 (a 25% reduction).
     const waveScale = Math.min(1, (waveNum - 1) / 19); // 0 at wave 1, 1 at wave 20
-    const scaleReduction = 0.25 * waveScale;
+    const scaleReduction = 0.44 * waveScale;
     return Math.round(base * 0.8 * (1 - scaleReduction));
   };
 
@@ -2197,8 +2196,8 @@ export default function GameCanvas({
       const totalToSpawn = state.wave >= 100 ? 999999 : state.waveTotalToSpawn;
       
       // Pause spawning if the player is overwhelmed (too many active enemies on screen).
-      // Max active enemies starts at 8 on low levels, scaling up to 15 on higher levels.
-      const maxActiveEnemies = state.wave < 5 ? 8 : (state.wave < 15 ? 12 : 15);
+      // Max active enemies starts at 8 on low levels, scaling up to a controlled maximum of 11 on higher levels (down 25% from 15 to prevent overwhelming the screen).
+      const maxActiveEnemies = state.wave < 5 ? 8 : (state.wave < 15 ? 10 : 11);
       
       if (now - state.lastSpawnTime > spawnInterval && state.waveSpawnedCount < totalToSpawn && state.enemies.length < maxActiveEnemies) {
         spawnNewEnemyWave();
@@ -3056,11 +3055,11 @@ export default function GameCanvas({
     if (!canvas) return;
 
     const players = state.players || [];
-    // Reduce average spawns at a time by up to 25% on higher levels to spread out enemies.
+    // Reduce average spawns at a time by up to 39% on higher levels to spread out enemies.
     // At wave 1: average spawns is 1.4 (60% chance for 1, 40% chance for 2).
-    // At wave 20+: average spawns is 1.05 (95% chance for 1, 5% chance for 2) - a 25% reduction in spawn density.
+    // At wave 20+: average spawns is 1.01 (99% chance for 1, 1% chance for 2) - resolving high-density enemy clumps.
     const waveScale = Math.min(1, (state.wave - 1) / 19);
-    const spawnOneChance = 0.6 + waveScale * 0.35;
+    const spawnOneChance = 0.6 + waveScale * 0.39;
     const spawnCount = Math.min(
       Math.random() < spawnOneChance ? 1 : 2, 
       state.waveTotalToSpawn - state.waveSpawnedCount
