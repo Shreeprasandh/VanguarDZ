@@ -145,3 +145,20 @@ export async function saveHighScore(username, score) {
     console.error('Supabase saveHighScore error:', err);
   }
 }
+
+export async function submitFeedback(username, feedbackText) {
+  if (!supabase) {
+    throw new Error('Supabase client is not initialized.');
+  }
+
+  const { error } = await supabase
+    .from('feedbacks')
+    .insert({
+      username: username ? username.trim() : 'anonymous',
+      feedback: feedbackText
+    });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}

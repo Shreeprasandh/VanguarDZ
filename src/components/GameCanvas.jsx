@@ -55,6 +55,17 @@ export default function GameCanvas({
     return true;
   };
 
+  // Calculate wave spawn count, dynamically scaling down by up to 25% on higher levels (wave 20+) to avoid overwhelming the player.
+  const calculateWaveTotalToSpawn = (waveNum) => {
+    const base = 10 + waveNum * 4;
+    // Scale down the multiplier from 0.8 (normal) down by 25% (i.e. to 0.6) on higher levels.
+    // At wave 1: multiplier is 0.8.
+    // At wave 20+: multiplier is 0.8 * 0.75 = 0.6 (a 25% reduction).
+    const waveScale = Math.min(1, (waveNum - 1) / 19); // 0 at wave 1, 1 at wave 20
+    const scaleReduction = 0.25 * waveScale;
+    return Math.round(base * 0.8 * (1 - scaleReduction));
+  };
+
   const stateRef = useRef({
     score: 0,
     multiplier: 1,
@@ -123,7 +134,7 @@ export default function GameCanvas({
     
     stateRef.current.wave = waveVal;
     stateRef.current.score = scoreVal;
-    stateRef.current.waveTotalToSpawn = Math.round((10 + waveVal * 4) * 0.8);
+    stateRef.current.waveTotalToSpawn = calculateWaveTotalToSpawn(waveVal);
     
     if (waveVal === 1) {
       stateRef.current.usedWords.clear();
@@ -570,7 +581,7 @@ export default function GameCanvas({
                   maxHealth: 100,
                   words: data.bossWords || [],
                   phase: data.phase,
-                  shootTimer: 120
+                  shootTimer: 150
                 };
               } else {
                 state.bossObj.id = data.bossId !== undefined ? data.bossId : state.bossObj.id;
@@ -995,7 +1006,7 @@ export default function GameCanvas({
             state.enemies = [];
             state.bullets = [];
             state.waveSpawnedCount = 0;
-            state.waveTotalToSpawn = Math.round((10 + data.wave * 4) * 0.8);
+            state.waveTotalToSpawn = calculateWaveTotalToSpawn(data.wave);
             // Partially heal client player and teammates between waves (refill by 50)
             state.health = Math.min(100, state.health + 50);
             if (state.teammates) {
@@ -2185,7 +2196,11 @@ export default function GameCanvas({
       const spawnInterval = state.wave >= 100 ? 400 : Math.max(1500, 2950 - state.wave * 50); // Spawning speed scales up (caps at Wave 29)
       const totalToSpawn = state.wave >= 100 ? 999999 : state.waveTotalToSpawn;
       
-      if (now - state.lastSpawnTime > spawnInterval && state.waveSpawnedCount < totalToSpawn) {
+      // Pause spawning if the player is overwhelmed (too many active enemies on screen).
+      // Max active enemies starts at 8 on low levels, scaling up to 15 on higher levels.
+      const maxActiveEnemies = state.wave < 5 ? 8 : (state.wave < 15 ? 12 : 15);
+      
+      if (now - state.lastSpawnTime > spawnInterval && state.waveSpawnedCount < totalToSpawn && state.enemies.length < maxActiveEnemies) {
         spawnNewEnemyWave();
         state.lastSpawnTime = now;
       }
@@ -2217,7 +2232,7 @@ export default function GameCanvas({
         } else {
           fireBossBullet();
         }
-        boss.shootTimer = Math.max(60, 160 - state.wave * 10);
+        boss.shootTimer = Math.round(Math.max(60, 160 - state.wave * 10) * 1.25);
       }
     }
 
@@ -2512,7 +2527,7 @@ export default function GameCanvas({
             speed: childSpeed,
             targetIndex: 0,
             type: childType,
-            shootCooldown: 150,
+            shootCooldown: 188,
             movementPattern: 'straight',
             patternAge: 0,
             dirMultiplier: Math.random() < 0.5 ? 1 : -1
@@ -2528,7 +2543,7 @@ export default function GameCanvas({
             speed: childSpeed,
             targetIndex: 0,
             type: childType,
-            shootCooldown: 150,
+            shootCooldown: 188,
             movementPattern: 'straight',
             patternAge: 0,
             dirMultiplier: Math.random() < 0.5 ? 1 : -1
@@ -2711,10 +2726,10 @@ export default function GameCanvas({
       if (enemy.type === 'cruiser' && isHost) {
         const isFrozen = (enemy.freezeTime && enemy.freezeTime > 0) || (enemy.anchoredTime && enemy.anchoredTime > 0);
         if (!isFrozen) {
-          enemy.shootCooldown = (enemy.shootCooldown || 180) - 1;
+          enemy.shootCooldown = (enemy.shootCooldown || 225) - 1;
           if (enemy.shootCooldown <= 0) {
             fireGeneralBullet(enemy);
-            enemy.shootCooldown = state.wave >= 100 ? 15 : (180 + Math.random() * 120); // Unbeatable bullet storm
+            enemy.shootCooldown = state.wave >= 100 ? 19 : Math.round((180 + Math.random() * 120) * 1.25); // Increased interval by 25% (unbeatable bullet storm from 15 to 19 frames)
           }
         }
       }
@@ -3041,8 +3056,13 @@ export default function GameCanvas({
     if (!canvas) return;
 
     const players = state.players || [];
+    // Reduce average spawns at a time by up to 25% on higher levels to spread out enemies.
+    // At wave 1: average spawns is 1.4 (60% chance for 1, 40% chance for 2).
+    // At wave 20+: average spawns is 1.05 (95% chance for 1, 5% chance for 2) - a 25% reduction in spawn density.
+    const waveScale = Math.min(1, (state.wave - 1) / 19);
+    const spawnOneChance = 0.6 + waveScale * 0.35;
     const spawnCount = Math.min(
-      Math.random() < 0.6 ? 1 : 2, 
+      Math.random() < spawnOneChance ? 1 : 2, 
       state.waveTotalToSpawn - state.waveSpawnedCount
     );
 
@@ -3172,7 +3192,7 @@ export default function GameCanvas({
         speed,
         targetIndex: 0,
         type,
-        shootCooldown: 150,
+        shootCooldown: 188,
         movementPattern: pattern,
         patternAge: 0,
         dirMultiplier: Math.random() < 0.5 ? 1 : -1
@@ -3315,7 +3335,7 @@ export default function GameCanvas({
       maxHealth: 100,
       words: bossWords,
       phase: 0,
-      shootTimer: 100
+      shootTimer: 125
     };
 
     // Load boss words into the active gameplay targets
@@ -3402,7 +3422,7 @@ export default function GameCanvas({
       maxHealth: 100,
       words: bossWords,
       phase: 0,
-      shootTimer: 90
+      shootTimer: 113
     };
 
     loadBossWordsAsEnemies(bossWords);
@@ -3766,7 +3786,7 @@ export default function GameCanvas({
     state.enemies = [];
     state.bullets = [];
     state.waveSpawnedCount = 0;
-    state.waveTotalToSpawn = Math.round((10 + nextWaveNum * 4) * 0.8);
+    state.waveTotalToSpawn = calculateWaveTotalToSpawn(nextWaveNum);
     
     state.targetNebulaColor = {
       h: (260 + nextWaveNum * 30) % 360,

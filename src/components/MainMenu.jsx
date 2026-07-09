@@ -12,6 +12,7 @@ export default function MainMenu({
   onOpenLeaderboard,
   onOpenEditProfile,
   onOpenStory,
+  onOpenFeedback,
   maxCheckpoint = 0
 }) {
   const [showTeamOptions, setShowTeamOptions] = useState(false);
@@ -280,7 +281,7 @@ export default function MainMenu({
               left: '50%',
               transform: 'translateX(-50%)',
               display: 'flex',
-              gap: '2.5rem',
+              gap: '1.8rem',
               alignItems: 'center',
               zIndex: 20
             }}
@@ -291,6 +292,13 @@ export default function MainMenu({
               onClick={() => { handleButtonClick(); onOpenStory(); }}
             >
               Story
+            </button>
+            <button 
+              className="leaderboard-link"
+              style={{ margin: 0, opacity: 0.65, fontSize: '0.85rem' }}
+              onClick={() => { handleButtonClick(); onOpenFeedback(); }}
+            >
+              Feedback
             </button>
             <button 
               className="leaderboard-link"
@@ -585,6 +593,39 @@ export default function MainMenu({
               onClick={() => { handleButtonClick(); onOpenStory(); }}
             >
               Story
+            </button>
+          </div>
+
+          {/* Feedback Link on Bottom Right (fixed position for desktop) */}
+          <div 
+            className={isFirstLoad ? 'boot-ui-animate' : ''}
+            style={{
+              position: 'fixed',
+              bottom: '1.5rem',
+              right: '1.5rem',
+              zIndex: 20,
+              opacity: isFirstLoad ? 0 : 1
+            }}
+          >
+            <button 
+              className="leaderboard-link"
+              style={{
+                marginTop: 0,
+                opacity: 0.35,
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                fontFamily: 'var(--font-display)',
+                fontSize: '0.8rem',
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }}
+              onClick={() => { handleButtonClick(); onOpenFeedback(); }}
+            >
+              Feedback
             </button>
           </div>
         </>

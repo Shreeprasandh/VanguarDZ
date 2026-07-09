@@ -8,6 +8,7 @@ import GameOver from './components/GameOver';
 import { GameAudio } from './game/audio';
 import MenuBackground from './components/MenuBackground';
 import StoryModal from './components/StoryModal';
+import FeedbackModal from './components/FeedbackModal';
 import DockingStation from './components/DockingStation';
 import InfoPopup from './components/InfoPopup';
 import { Analytics } from '@vercel/analytics/react';
@@ -37,6 +38,7 @@ export default function App() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showStory, setShowStory] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [muted, setMuted] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -757,6 +759,7 @@ export default function App() {
             onOpenLeaderboard={() => setShowLeaderboard(true)}
             onOpenEditProfile={() => setShowEditProfile(true)}
             onOpenStory={() => setShowStory(true)}
+            onOpenFeedback={() => setShowFeedback(true)}
             onOpenInfo={() => setShowInfoPopup(true)}
             maxCheckpoint={maxCheckpoint}
           />
@@ -1057,6 +1060,14 @@ export default function App() {
       {showStory && (
         <StoryModal
           onClose={() => setShowStory(false)}
+        />
+      )}
+
+      {/* Feedback Uplink overlay */}
+      {showFeedback && (
+        <FeedbackModal
+          username={username}
+          onClose={() => setShowFeedback(false)}
         />
       )}
 
