@@ -572,7 +572,7 @@ export default function GameCanvas({
                   type: data.bossType || 'boss',
                   name: data.bossName || 'BOSS',
                   color: data.bossColor || 'purple',
-                  x: canvas.width / 2,
+                  x: data.bossX !== undefined ? data.bossX * canvas.width : canvas.width / 2,
                   y: 120,
                   width: data.bossWidth || 180,
                   height: data.bossHeight || 100,
@@ -592,6 +592,9 @@ export default function GameCanvas({
                 state.bossObj.health = data.bossHealth !== undefined ? data.bossHealth : state.bossObj.health;
                 state.bossObj.words = data.bossWords !== undefined ? data.bossWords : state.bossObj.words;
                 state.bossObj.phase = data.phase !== undefined ? data.phase : state.bossObj.phase;
+                if (data.bossX !== undefined) {
+                  state.bossObj.x = data.bossX * canvas.width;
+                }
               }
               // Clear any active boss shields to prevent duplicates
               state.enemies = state.enemies.filter(e => e.type !== 'boss_shield');
@@ -1103,9 +1106,9 @@ export default function GameCanvas({
   const handleEnemyKill = (enemy) => {
     const state = stateRef.current;
     
-    if (enemy.type === 'mirage_decoy') {
+    if (enemy.type === 'mirage_decoy' || enemy.type === 'archon_decoy') {
       state.activeWordId = null;
-      createExplosion(enemy.x, enemy.y, '#db2777', 22, true);
+      createExplosion(enemy.x, enemy.y, enemy.type === 'mirage_decoy' ? '#db2777' : '#9ca3af', 22, true);
       GameAudio.play('explosion');
       state.enemies = state.enemies.filter(e => e.id !== enemy.id);
       return;
@@ -4505,6 +4508,18 @@ export default function GameCanvas({
       } else if (bossTier === 50) {
         bossColor = 'purple';
         bossLabel = 'SINGULARITY VOID';
+      } else if (bossTier === 60) {
+        bossColor = 'green';
+        bossLabel = 'NANITE OVERSEER';
+      } else if (bossTier === 70) {
+        bossColor = 'orange';
+        bossLabel = 'APEX RAGNAROK';
+      } else if (bossTier === 80) {
+        bossColor = 'cyan';
+        bossLabel = 'NEXUS MATRIARCH';
+      } else if (bossTier === 90) {
+        bossColor = 'silver';
+        bossLabel = 'OBLIVION ARCHON';
       } else if (bossTier >= 100) {
         bossColor = 'red';
         bossLabel = 'VOID EMPEROR [FINAL]';
@@ -4677,6 +4692,87 @@ export default function GameCanvas({
         ctx.ellipse(0, 0, boss.width * 0.55, boss.height * 0.25, rot, 0, Math.PI * 2);
         ctx.ellipse(0, 0, boss.width * 0.55, boss.height * 0.25, -rot * 0.8, 0, Math.PI * 2);
         ctx.stroke();
+      } else if (bossTier === 60) {
+        // Nanite Overseer: Hexagonal core
+        ctx.strokeStyle = '#22c55e';
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = (i * Math.PI) / 3;
+          const x = Math.cos(angle) * 32;
+          const y = Math.sin(angle) * 32;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.08)';
+        ctx.fill();
+        ctx.stroke();
+
+        // Node indicators orbiting the hex core
+        for (let i = 0; i < 6; i++) {
+          const angle = (i * Math.PI) / 3 + (Date.now() * 0.001);
+          const x = Math.cos(angle) * 48;
+          const y = Math.sin(angle) * 48;
+          ctx.beginPath();
+          ctx.arc(x, y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#22c55e';
+          ctx.fill();
+        }
+      } else if (bossTier === 70) {
+        // Apex Ragnarok: Solar furnace core
+        ctx.strokeStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(0, 0, 30, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(249, 115, 22, 0.12)';
+        ctx.fill();
+        ctx.stroke();
+
+        // Flared Exhaust Spikes
+        ctx.beginPath();
+        ctx.moveTo(-45, -25); ctx.lineTo(-65, -35);
+        ctx.moveTo(45, -25); ctx.lineTo(65, -35);
+        ctx.moveTo(-45, 25); ctx.lineTo(-65, 35);
+        ctx.moveTo(45, 25); ctx.lineTo(65, 35);
+        ctx.stroke();
+      } else if (bossTier === 80) {
+        // Nexus Matriarch: Cyan matrix triangle portal
+        const scale = 1.0 + Math.sin(Date.now() * 0.003) * 0.08;
+        ctx.strokeStyle = '#06b6d4';
+        ctx.beginPath();
+        ctx.moveTo(0, -boss.height * 0.5 * scale);
+        ctx.lineTo(boss.width * 0.5 * scale, boss.height * 0.4 * scale);
+        ctx.lineTo(-boss.width * 0.5 * scale, boss.height * 0.4 * scale);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.08)';
+        ctx.fill();
+        ctx.stroke();
+      } else if (bossTier === 90) {
+        // Oblivion Archon: Grey spindle core with orbiting crystal shards
+        ctx.strokeStyle = '#9ca3af';
+        ctx.beginPath();
+        ctx.moveTo(0, -35);
+        ctx.lineTo(12, 0);
+        ctx.lineTo(0, 35);
+        ctx.lineTo(-12, 0);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(156, 163, 175, 0.12)';
+        ctx.fill();
+        ctx.stroke();
+
+        // Orb shards
+        const rot = Date.now() * 0.002;
+        for (let i = 0; i < 4; i++) {
+          const angle = (i * Math.PI) / 2 + rot;
+          const x = Math.cos(angle) * 52;
+          const y = Math.sin(angle) * 24;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.beginPath();
+          ctx.moveTo(0, -6); ctx.lineTo(4, 0); ctx.lineTo(0, 6); ctx.lineTo(-4, 0);
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
+        }
       } else if (bossTier >= 100) {
         // Void Emperor - Colossal Wings
         ctx.beginPath();
@@ -5058,6 +5154,17 @@ export default function GameCanvas({
         ctx.beginPath();
         ctx.moveTo(-15, -15); ctx.lineTo(-45, 15); ctx.lineTo(-8, 8);
         ctx.moveTo(15, -15); ctx.lineTo(45, 15); ctx.lineTo(8, 8);
+        ctx.stroke();
+        ctx.restore();
+      } else if (enemy.type === 'archon_decoy') {
+        // Archon decoy: silver core spindle outline
+        ctx.save();
+        ctx.strokeStyle = 'rgba(156, 163, 175, 0.7)';
+        ctx.shadowColor = '#9ca3af';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, -20); ctx.lineTo(8, 0); ctx.lineTo(0, 20); ctx.lineTo(-8, 0);
+        ctx.closePath();
         ctx.stroke();
         ctx.restore();
       } else if (enemy.type === 'meteor') {
