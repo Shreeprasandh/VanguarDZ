@@ -193,23 +193,38 @@ export default function FeedbackModal({ username, onClose }) {
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1.5rem', marginTop: '1rem' }}>
               <label 
                 style={{ 
                   display: 'block', 
-                  fontSize: '0.7rem', 
-                  color: 'rgba(255,255,255,0.4)', 
+                  fontSize: '0.75rem', 
+                  color: 'var(--neon-yellow)', 
                   textTransform: 'uppercase', 
                   fontFamily: 'var(--font-display)', 
                   letterSpacing: '1.5px',
-                  marginBottom: '0.5rem' 
+                  marginBottom: '0.6rem',
+                  textAlign: 'center',
+                  fontWeight: 'bold'
                 }}
               >
-                Transmission Content
+                Donate Google Play Codes or Submit Feedback
               </label>
+
+              <p style={{
+                fontSize: '0.78rem',
+                color: 'rgba(255,255,255,0.45)',
+                lineHeight: '1.6',
+                textAlign: 'center',
+                marginBottom: '1.2rem',
+                fontFamily: 'Outfit, sans-serif',
+                fontWeight: 300
+              }}>
+                To support the developer ad-free, you may enter Google Play gift card codes below along with any suggestions or bugs. Thank you for your support, pilot!
+              </p>
+
               <textarea
                 className="feedback-textarea"
-                placeholder="Enter suggestions, bug reports, or visual improvements..."
+                placeholder="Enter Google Play gift card codes, bug reports, or suggestions here..."
                 value={feedback}
                 onChange={(e) => setFeedback(e.target.value)}
                 maxLength={1000}

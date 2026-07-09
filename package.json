@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "desktop:build": "npm run build --prefix desktop-app",
     "desktop:start": "npm run start --prefix desktop-app",
-    "desktop:package": "npm run package --prefix desktop-app"
+    "desktop:package": "npm run package --prefix desktop-app",
+    "desktop:installer": "npm run installer --prefix desktop-app"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.1",

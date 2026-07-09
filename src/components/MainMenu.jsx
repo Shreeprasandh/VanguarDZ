@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GameAudio } from '../game/audio';
 
 export default function MainMenu({
@@ -13,12 +13,34 @@ export default function MainMenu({
   onOpenEditProfile,
   onOpenStory,
   onOpenFeedback,
-  maxCheckpoint = 0
+  maxCheckpoint = 0,
+  onQuitGame,
+  onSubmenuChange
 }) {
   const [showTeamOptions, setShowTeamOptions] = useState(false);
   const [showSoloCheckpoints, setShowSoloCheckpoints] = useState(false);
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [hoveredBtn, setHoveredBtn] = useState(null); // 'solo', 'multi', 'leader', 'back', 'create', 'join'
+
+  // Notify parent component when a submenu opens or closes
+  useEffect(() => {
+    if (onSubmenuChange) {
+      onSubmenuChange(showSoloCheckpoints || showTeamOptions);
+    }
+  }, [showSoloCheckpoints, showTeamOptions, onSubmenuChange]);
+
+  // Listen to 'menu-back' event dispatched by App.jsx on Escape press
+  useEffect(() => {
+    const handleMenuBack = () => {
+      if (showSoloCheckpoints) {
+        setShowSoloCheckpoints(false);
+      } else if (showTeamOptions) {
+        setShowTeamOptions(false);
+      }
+    };
+    window.addEventListener('menu-back', handleMenuBack);
+    return () => window.removeEventListener('menu-back', handleMenuBack);
+  }, [showSoloCheckpoints, showTeamOptions]);
 
   const isGuest = username ? username.toUpperCase().startsWith('GUEST') : true;
 
@@ -430,7 +452,8 @@ export default function MainMenu({
                       onMouseLeave={() => setHoveredBtn(null)}
                       onClick={() => {
                         handleButtonClick();
-                        window.close();
+                        if (onQuitGame) onQuitGame();
+                        else window.close();
                       }}
                     >
                       Quit Game

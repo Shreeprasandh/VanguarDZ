@@ -90,6 +90,33 @@ The game will now be hosted on [http://localhost:3001](http://localhost:3001). O
 
 ---
 
+## 💻 Desktop PC App (Electron)
+
+VanguarDZ can also be compiled and packaged as a standalone desktop PC application for Windows.
+
+### 1. Run in Desktop Dev Mode
+To launch the game locally in a borderless fullscreen window directly from your terminal:
+```bash
+npm run desktop:start
+```
+
+### 2. Package Standalone Windows Executable Folder
+To compile the game into a portable unpacked folder:
+```bash
+npm run desktop:package
+```
+Output is written to `desktop-app/release/VanguarDZ-win32-x64/`.
+
+### 3. Build Single Setup Installer File
+To package the app into a single standalone installer (`VanguarDZ-Setup.exe`) that you can distribute:
+```bash
+npm run desktop:installer
+```
+The compiled installer file will be located at `desktop-app/release/installer/VanguarDZ-Setup.exe`.
+*(Note: A copy of this installer is automatically placed in the `public/` directory so players can download the desktop app directly from your web host).*
+
+---
+
 ## 🚀 Deployment Guide
 
 ### Hosting on **Render** (Recommended)

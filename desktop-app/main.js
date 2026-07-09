@@ -20,7 +20,8 @@ if (!gotTheLock) {
       width: 1280,
       height: 720,
       fullscreen: true,          // Launch in borderless fullscreen mode by default
-      frame: false,               // Remove OS window headers and close/minimize buttons
+      frame: true,               // Native fullscreen will hide it automatically and prevent orange border
+      autoHideMenuBar: true,     // Hide the Electron menu bar
       backgroundColor: '#050508', // Matches game HUD black canvas color to prevent white flashes
       webPreferences: {
         nodeIntegration: false,

@@ -17,6 +17,7 @@ import { loginPilot, registerPilot, saveCheckpoint, saveHighScore, supabase } fr
 import { initDictionary } from './game/words';
 
 export default function App() {
+  const isElectron = window.navigator.userAgent.toLowerCase().includes('electron') || window.location.protocol === 'file:';
   // Profile settings (persisted in localStorage)
   const [username, setUsername] = useState(() => {
     return localStorage.getItem('cybertype_username') || `Pilot-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -43,6 +44,8 @@ export default function App() {
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   const [muted, setMuted] = useState(true);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [menuHasSubmenu, setMenuHasSubmenu] = useState(false);
 
   // Authentication & Checkpoints State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -209,6 +212,66 @@ export default function App() {
       window.removeEventListener('mouseover', forcePlayOnInteraction);
     };
   }, [screen]);
+
+  // Global Escape key handler for Back navigation and Exit game triggers
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (screen === 'playing') return; // Let GameCanvas handle in-game pause
+
+        e.preventDefault();
+
+        // 1. Close Exit Confirmation modal if open
+        if (showExitConfirm) {
+          setShowExitConfirm(false);
+          return;
+        }
+
+        // 2. Close active overlays/modals
+        if (showEditProfile) { setShowEditProfile(false); return; }
+        if (showLeaderboard) { setShowLeaderboard(false); return; }
+        if (showStory) { setShowStory(false); return; }
+        if (showFeedback) { setShowFeedback(false); return; }
+        if (showInfoPopup) { setShowInfoPopup(false); return; }
+
+        // 3. Handle screen specific Back actions
+        if (screen === 'lobby') {
+          handleLeaveRoom();
+          return;
+        }
+        if (screen === 'docking') {
+          handleDockContinue();
+          return;
+        }
+        if (screen === 'gameover') {
+          handleReturnMenu();
+          return;
+        }
+
+        // 4. Handle Main Menu back/exit actions
+        if (screen === 'menu') {
+          if (menuHasSubmenu) {
+            window.dispatchEvent(new CustomEvent('menu-back'));
+          } else {
+            // Trigger Exit confirmation popup
+            setShowExitConfirm(true);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [
+    screen,
+    showExitConfirm,
+    showEditProfile,
+    showLeaderboard,
+    showStory,
+    showFeedback,
+    showInfoPopup,
+    menuHasSubmenu
+  ]);
 
   // Set up WebSocket Connection
   useEffect(() => {
@@ -746,6 +809,22 @@ export default function App() {
     setMuted(isMuted);
   };
 
+  const handleDownloadInstaller = () => {
+    GameAudio.play('click');
+    const link = document.createElement('a');
+    link.href = '/VanguarDZ-Setup.exe';
+    link.download = 'VanguarDZ-Setup.exe';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleSupportDeveloper = () => {
+    GameAudio.play('click');
+    // Replace this link with your actual Ko-fi or Buy Me a Coffee link when you sign up!
+    window.open('https://ko-fi.com/vanguardz', '_blank');
+  };
+
   // Render logic helper
   const renderScreen = () => {
     switch (screen) {
@@ -766,6 +845,8 @@ export default function App() {
             onOpenFeedback={() => setShowFeedback(true)}
             onOpenInfo={() => setShowInfoPopup(true)}
             maxCheckpoint={maxCheckpoint}
+            onQuitGame={() => setShowExitConfirm(true)}
+            onSubmenuChange={setMenuHasSubmenu}
           />
         );
 
@@ -857,41 +938,82 @@ export default function App() {
       {screen !== 'playing' && (
         <div 
           className={`system-actions ${isFirstLoad ? 'boot-ui-animate' : ''}`}
-          style={{ opacity: isFirstLoad ? 0 : 1 }}
+          style={{ 
+            opacity: isFirstLoad ? 0 : 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-end',
+            gap: '0.8rem'
+          }}
         >
-          {isLoggedIn && (
+          {/* Main system action buttons (Speaker / Info / Logout) */}
+          <div style={{ display: 'flex', gap: '0.8rem' }}>
+            {isLoggedIn && (
+              <button 
+                className="system-btn" 
+                onClick={() => { GameAudio.play('click'); setShowLogoutConfirmModal(true); }} 
+                style={{ opacity: 0.35 }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                </svg>
+              </button>
+            )}
             <button 
               className="system-btn" 
-              onClick={() => { GameAudio.play('click'); setShowLogoutConfirmModal(true); }} 
+              onClick={toggleMute} 
+              style={{ opacity: 0.35 }}
+            >
+              {muted ? (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/></svg>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              )}
+            </button>
+            <button 
+              className="system-btn" 
+              onClick={() => { GameAudio.play('click'); setShowInfoPopup(true); }} 
               style={{ opacity: 0.35 }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
             </button>
+          </div>
+
+          {/* Download PC Launcher button (Only visible on web browser) */}
+          {!isElectron && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span 
+                onClick={handleDownloadInstaller}
+                style={{ 
+                  fontSize: '0.68rem', 
+                  fontFamily: 'var(--font-display)', 
+                  color: 'var(--text-secondary)', 
+                  opacity: 0.4, 
+                  letterSpacing: '2px', 
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  transition: 'opacity 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.opacity = 0.8}
+                onMouseLeave={(e) => e.target.style.opacity = 0.4}
+              >
+                DOWNLOAD
+              </span>
+              <button 
+                className="system-btn" 
+                onClick={handleDownloadInstaller} 
+                style={{ opacity: 0.35 }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                </svg>
+              </button>
+            </div>
           )}
-          <button 
-            className="system-btn" 
-            onClick={toggleMute} 
-            style={{ opacity: 0.35 }}
-          >
-            {muted ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/></svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-            )}
-          </button>
-          <button 
-            className="system-btn" 
-            onClick={() => { GameAudio.play('click'); setShowInfoPopup(true); }} 
-            style={{ opacity: 0.35 }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </button>
         </div>
       )}
 
@@ -1081,6 +1203,74 @@ export default function App() {
         <InfoPopup
           onClose={() => setShowInfoPopup(false)}
         />
+      )}
+
+      {/* Exit Game Confirmation Overlay */}
+      {showExitConfirm && (
+        <div 
+          className="modal-overlay" 
+          style={{ 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0, 0, 0, 0.85)', 
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 3000,
+            backdropFilter: 'blur(8px)' 
+          }}
+        >
+          <div 
+            className="glass-panel" 
+            style={{ 
+              maxWidth: '380px', 
+              width: '90%', 
+              padding: '2.5rem 1.8rem', 
+              textAlign: 'center', 
+              position: 'relative', 
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+              background: 'rgba(5, 5, 8, 0.98)',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.95)',
+              borderRadius: '4px'
+            }}
+          >
+            {/* Corner brackets */}
+            <div style={{ position: 'absolute', top: '10px', left: '10px', width: '12px', height: '12px', borderTop: '2px solid var(--neon-red)', borderLeft: '2px solid var(--neon-red)' }} />
+            <div style={{ position: 'absolute', top: '10px', right: '10px', width: '12px', height: '12px', borderTop: '2px solid var(--neon-red)', borderRight: '2px solid var(--neon-red)' }} />
+            <div style={{ position: 'absolute', bottom: '10px', left: '10px', width: '12px', height: '12px', borderBottom: '2px solid var(--neon-red)', borderLeft: '2px solid var(--neon-red)' }} />
+            <div style={{ position: 'absolute', bottom: '10px', right: '10px', width: '12px', height: '12px', borderBottom: '2px solid var(--neon-red)', borderRight: '2px solid var(--neon-red)' }} />
+
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--neon-red)', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '1rem', textShadow: '0 0 8px rgba(239, 68, 68, 0.3)' }}>
+              Exit Simulator?
+            </h2>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '2.2rem', fontWeight: 300 }}>
+              Are you sure you want to terminate the defensive targeting matrix and close VanguarDZ?
+            </p>
+
+            <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+              <button 
+                className="btn btn-secondary" 
+                style={{ flex: 1, margin: 0, fontSize: '0.82rem', letterSpacing: '1px', border: '1px solid rgba(255, 255, 255, 0.15)', padding: '0.6rem' }}
+                onClick={() => { GameAudio.play('click'); setShowExitConfirm(false); }}
+              >
+                Abort
+              </button>
+              <button 
+                className="btn" 
+                style={{ flex: 1, margin: 0, fontSize: '0.82rem', letterSpacing: '1px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid var(--neon-red)', color: 'var(--neon-red)', padding: '0.6rem' }}
+                onClick={() => {
+                  GameAudio.play('click');
+                  window.close();
+                }}
+              >
+                Confirm Exit
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Authentication Failure Modal Popup */}
