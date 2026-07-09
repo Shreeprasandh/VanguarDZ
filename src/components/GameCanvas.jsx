@@ -2253,7 +2253,7 @@ export default function GameCanvas({
         // 1. Dreadnought Sentinel (Wave 10): Bullet Burst Fire
         if (bossTier === 10) {
           boss.burstTimer = (boss.burstTimer || 0) + 1;
-          if (boss.burstTimer >= 480) { // ~8 seconds
+          if (boss.burstTimer >= 960) { // ~16 seconds (doubled)
             boss.burstTimer = 0;
             triggerDreadnoughtBurst();
           }
@@ -2270,7 +2270,7 @@ export default function GameCanvas({
               state.enemies.forEach(e => { if (e.originalSpeed) { e.speed = e.originalSpeed; delete e.originalSpeed; } });
               state.bullets.forEach(b => { if (b.originalSpeed) { b.speed = b.originalSpeed; delete b.originalSpeed; } });
             }
-          } else if (boss.timeWarpTimer >= 600) { // ~10 seconds
+          } else if (boss.timeWarpTimer >= 1200) { // ~20 seconds (doubled)
             boss.timeWarpTimer = 0;
             boss.timeWarpActive = true;
             boss.timeWarpDuration = 180; // 3 seconds of speed warp
@@ -2292,7 +2292,7 @@ export default function GameCanvas({
         // 3. Plasma Leviathan (Wave 30): Spawn Shield Linkers
         if (bossTier === 30) {
           boss.linkerTimer = (boss.linkerTimer || 0) + 1;
-          if (boss.linkerTimer >= 540) { // ~9 seconds
+          if (boss.linkerTimer >= 1080) { // ~18 seconds (doubled)
             boss.linkerTimer = 0;
             spawnLeviathanLinker();
           }
@@ -2301,7 +2301,7 @@ export default function GameCanvas({
         // 4. Hyperion Carrier (Wave 40): Launch Fighter Swarm
         if (bossTier === 40) {
           boss.swarmTimer = (boss.swarmTimer || 0) + 1;
-          if (boss.swarmTimer >= 600) { // ~10 seconds
+          if (boss.swarmTimer >= 1200) { // ~20 seconds (doubled)
             boss.swarmTimer = 0;
             launchFighterSwarm();
           }
@@ -2310,7 +2310,7 @@ export default function GameCanvas({
         // 5. Singularity Void (Wave 50): Gravity vortex pull
         if (bossTier === 50) {
           boss.pullTimer = (boss.pullTimer || 0) + 1;
-          if (boss.pullTimer >= 480) { // ~8 seconds
+          if (boss.pullTimer >= 960) { // ~16 seconds (doubled)
             boss.pullTimer = 0;
             triggerSingularityPull();
           }
@@ -2326,7 +2326,7 @@ export default function GameCanvas({
               boss.doomsdayTimer = 0;
               triggerVoidDoomsdayBlast();
             }
-          } else if (boss.doomsdayTimer >= 900) { // ~15 seconds
+          } else if (boss.doomsdayTimer >= 1800) { // ~30 seconds (doubled)
             boss.doomsdayTimer = 0;
             boss.doomsdayActive = true;
             boss.doomsdayCountdown = 10000; // 10 seconds countdown
