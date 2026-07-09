@@ -1,4 +1,4 @@
-# 🌌 CyberType / VanguarDZ
+# 🌌 VanguarDZ
 *An elegant, fast-paced co-op cyberpunk typing shooter built with HTML5 Canvas, React, Express, and WebSockets.*
 
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
@@ -9,15 +9,17 @@
 [![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
 ```text
-   _____   __     __  ____    ______   _____   _______  __     __  _____   ______
-  / ___/   \ \   / / |  _ \  |  ____| |  __ \ |__   __| \ \   / / |  __ \ |  ____|
- | |        \ \_/ /  | |_) | | |__    | |__) |   | |     \ \_/ /  | |__) || |__   
- | |         \   /   |  _ <  |  __|   |  _  /    | |      \   /   |  ___/ |  __|  
- | |___       | |    | |_) | | |____  | | \ \    | |       | |    | |     | |____ 
-  \____/      |_|    |____/  |______| |_|  \_\   |_|       |_|    |_|     |______|
+ __      __                                                  _____  ______ 
+ \ \    / /                                                 |  __ \|___  / 
+  \ \  / /_ _ _ __   __ _ _   _  __ _ _ __   __ _ _ __      | |  | |  / /  
+   \ \/ / _` | '_ \ / _` | | | |/ _` | '_ \ / _` | '_ \     | |  | | / /   
+    \  / (_| | | | | (_| | |_| | (_| | | | | (_| | | | |    | |__| |/ /__  
+     \/ \__,_|_| |_|\__, |\__,_|\__,_|_| |_|\__,_|_| |_|    |_____//_____| 
+                     __/ |                                                 
+                    |___/                                                  
 ```
 
-CyberType is a premium, minimal, and immersive 2D multiplayer typing game. Players command high-tech spacecraft, typing descending words to fire laser beams and obliterate incoming hostiles. Team up with friends in real-time co-op lobbies, unlock powerful abilities, and survive intense boss fights.
+VanguarDZ is a premium, minimal, and immersive 2D multiplayer typing game. Players command high-tech spacecraft, typing descending words to fire laser beams and obliterate incoming hostiles. Team up with friends in real-time co-op lobbies, unlock powerful abilities, and survive intense boss fights.
 
 ---
 
