@@ -9,14 +9,12 @@
 [![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
 
 ```text
- __      __                                                  _____  ______ 
- \ \    / /                                                 |  __ \|___  / 
-  \ \  / /_ _ _ __   __ _ _   _  __ _ _ __   __ _ _ __      | |  | |  / /  
-   \ \/ / _` | '_ \ / _` | | | |/ _` | '_ \ / _` | '_ \     | |  | | / /   
-    \  / (_| | | | | (_| | |_| | (_| | | | | (_| | | | |    | |__| |/ /__  
-     \/ \__,_|_| |_|\__, |\__,_|\__,_|_| |_|\__,_|_| |_|    |_____//_____| 
-                     __/ |                                                 
-                    |___/                                                  
+ _    __                                       ____  _____
+| |  / /___ _____  ____ ___  ______ ______    / __ \/__  /
+| | / / __ `/ __ \/ __ `/ / / / __ `/ ___/   / / / /  / / 
+| |/ / /_/ / / / / /_/ / /_/ / /_/ / /      / /_/ /  / /__
+|___/\__,_/_/ /_/\__, /\__,_/\__,_/_/       /_____/  /____/
+                /____/                                    
 ```
 
 VanguarDZ is a premium, minimal, and immersive 2D multiplayer typing game. Players command high-tech spacecraft, typing descending words to fire laser beams and obliterate incoming hostiles. Team up with friends in real-time co-op lobbies, unlock powerful abilities, and survive intense boss fights.
