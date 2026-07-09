@@ -418,6 +418,26 @@ export default function MainMenu({
                   </button>
                 </div>
               </div>
+
+              {window.navigator.userAgent.toLowerCase().includes('electron') && (
+                <div className="menu-item-row" style={{ marginTop: '0.5rem' }}>
+                  <div className="minimal-btn-wrapper">
+                    {renderPointer('quit')}
+                    <button 
+                      className="minimal-text-btn"
+                      style={{ fontSize: '0.9rem', color: 'var(--neon-red)', opacity: 0.8, letterSpacing: '3px' }}
+                      onMouseEnter={() => setHoveredBtn('quit')}
+                      onMouseLeave={() => setHoveredBtn(null)}
+                      onClick={() => {
+                        handleButtonClick();
+                        window.close();
+                      }}
+                    >
+                      Quit Game
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : showSoloCheckpoints ? (
             <div className="checkpoint-menu-container" style={{ width: '100%' }}>
