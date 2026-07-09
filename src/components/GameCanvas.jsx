@@ -3211,6 +3211,16 @@ export default function GameCanvas({
 
     const newEnemies = [];
 
+    // Calculate currently active heavy enemy counts and time differences to enforce strict spawning intervals
+    const activeCruiserCount = state.enemies.filter(e => e.type === 'cruiser').length;
+    const timeSinceLastCruiser = Date.now() - (state.lastCruiserSpawnTime || 0);
+
+    const activeLinkerCount = state.enemies.filter(e => e.type === 'shield_linker').length;
+    const timeSinceLastLinker = Date.now() - (state.lastLinkerSpawnTime || 0);
+
+    let localCruisersSpawned = 0;
+    let localLinkersSpawned = 0;
+
     for (let i = 0; i < spawnCount; i++) {
       // Determine enemy class
       let type = 'drone';
@@ -3221,19 +3231,32 @@ export default function GameCanvas({
       const isKamikazeWave = state.wave >= 5;
       const kamikazeChance = isKamikazeWave ? (state.wave < 40 ? 0.06 : 0.11) : 0.0; // Reduced spawn chance by 2% (0.08->0.06, 0.13->0.11)
 
+      // Spawning conditions checking intervals and active screen counts
+      const canSpawnCruiser = state.wave >= 9 && 
+                              (activeCruiserCount + localCruisersSpawned) < (state.wave >= 60 ? 2 : 1) && 
+                              (timeSinceLastCruiser > 12000); // Minimum 12s interval between cruisers
+
+      const canSpawnLinker = state.wave >= 17 && 
+                             (activeLinkerCount + localLinkersSpawned) < 1 && 
+                             (timeSinceLastLinker > 15000); // Minimum 15s interval between linkers
+
       if (state.wave >= 25 && rng > 0.96) {
         type = 'replicator';
         speed = 0.405 + Math.random() * 0.135; // Speed reduced by 10% (from 0.45 -> 0.405, and 0.15 -> 0.135)
       } else if (state.wave >= 21 && rng > 0.91 && rng <= 0.96) {
         type = 'stealth_cloaker';
         speed = 0.425 + Math.random() * 0.17; // Speed reduced by 15% (from 0.5 -> 0.425, and 0.2 -> 0.17)
-      } else if (state.wave >= 17 && rng > 0.86 && rng <= 0.91) {
+      } else if (canSpawnLinker && rng > 0.86 && rng <= 0.91) {
         type = 'shield_linker';
         speed = 0.32 + Math.random() * 0.12; // Speed reduced by 20% (from 0.4 -> 0.32, and 0.15 -> 0.12)
-      } else if (state.wave >= 9 && rng > 0.79 && rng <= 0.84) {
+        state.lastLinkerSpawnTime = Date.now();
+        localLinkersSpawned++;
+      } else if (canSpawnCruiser && rng > 0.79 && rng <= 0.84) {
         type = 'cruiser'; // General
         speed = 0.189 + Math.random() * 0.126; // Speed reduced by 30% (from 0.27 -> 0.189, and 0.18 -> 0.126)
         hp = 2;
+        state.lastCruiserSpawnTime = Date.now();
+        localCruisersSpawned++;
       } else if (isKamikazeWave && rng > 0.70 - kamikazeChance && rng <= 0.70) {
         type = 'kamikaze';
         const waveScale = Math.min(1.0, (state.wave - 5) / 20); // 0.0 at wave 5, scaling to 1.0 at wave 25+

@@ -819,12 +819,6 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  const handleSupportDeveloper = () => {
-    GameAudio.play('click');
-    // Replace this link with your actual Ko-fi or Buy Me a Coffee link when you sign up!
-    window.open('https://ko-fi.com/vanguardz', '_blank');
-  };
-
   // Render logic helper
   const renderScreen = () => {
     switch (screen) {
