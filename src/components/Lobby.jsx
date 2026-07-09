@@ -372,11 +372,11 @@ export default function Lobby({ roomCode, players, maxPlayers = 3, localPlayerId
                         onClick={onOpenProfileEdit}
                         className="btn-profile-edit-lobby"
                         style={{
-                          fontSize: '0.7rem',
+                          fontSize: '0.75rem',
                           color: playerColor ? `var(--neon-${playerColor})` : 'var(--neon-blue)',
                           border: playerColor ? `1px solid var(--neon-${playerColor})` : '1px solid rgba(255, 255, 255, 0.15)',
                           background: 'rgba(255, 255, 255, 0.02)',
-                          padding: '0.35rem 0.9rem',
+                          padding: '0.45rem 1.2rem',
                           cursor: 'pointer',
                           borderRadius: '2px',
                           textTransform: 'uppercase',
@@ -384,7 +384,10 @@ export default function Lobby({ roomCode, players, maxPlayers = 3, localPlayerId
                           fontFamily: 'var(--font-display)',
                           transition: 'all 0.2s',
                           outline: 'none',
-                          boxShadow: playerColor ? `0 0 6px rgba(${playerColor === 'red' ? '207, 64, 66' : playerColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.15)` : 'none'
+                          boxShadow: playerColor ? `0 0 6px rgba(${playerColor === 'red' ? '207, 64, 66' : playerColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.15)` : 'none',
+                          width: '100%',
+                          maxWidth: '130px',
+                          textAlign: 'center'
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.background = playerColor ? `rgba(${playerColor === 'red' ? '207, 64, 66' : playerColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.08)` : 'rgba(255, 255, 255, 0.08)';
@@ -395,7 +398,7 @@ export default function Lobby({ roomCode, players, maxPlayers = 3, localPlayerId
                           e.currentTarget.style.boxShadow = playerColor ? `0 0 6px rgba(${playerColor === 'red' ? '207, 64, 66' : playerColor === 'green' ? '46, 189, 89' : '74, 144, 226'}, 0.15)` : 'none';
                         }}
                       >
-                        Callsign / Weapon Loadout
+                        Loadout
                       </button>
                     </div>
                   ) : playerColor ? (

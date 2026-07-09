@@ -19,6 +19,8 @@ export default function MainMenu({
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [hoveredBtn, setHoveredBtn] = useState(null); // 'solo', 'multi', 'leader', 'back', 'create', 'join'
 
+  const isGuest = username ? username.toUpperCase().startsWith('GUEST') : true;
+
   let shipStrokeColor = 'var(--neon-blue)';
   if (shipColor === 'red') shipStrokeColor = 'var(--neon-red)';
   if (shipColor === 'green') shipStrokeColor = 'var(--neon-green)';
@@ -366,7 +368,14 @@ export default function MainMenu({
                     className="minimal-text-btn"
                     onMouseEnter={() => setHoveredBtn('solo')}
                     onMouseLeave={() => setHoveredBtn(null)}
-                    onClick={() => { handleButtonClick(); setShowSoloCheckpoints(true); }}
+                    onClick={() => {
+                      handleButtonClick();
+                      if (isGuest) {
+                        onStartSolo(1);
+                      } else {
+                        setShowSoloCheckpoints(true);
+                      }
+                    }}
                   >
                     Solo
                   </button>

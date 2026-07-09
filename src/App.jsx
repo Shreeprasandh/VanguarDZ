@@ -11,7 +11,8 @@ import StoryModal from './components/StoryModal';
 import DockingStation from './components/DockingStation';
 import InfoPopup from './components/InfoPopup';
 import { Analytics } from '@vercel/analytics/react';
-import { loginPilot, registerPilot, saveCheckpoint, supabase } from './game/supabase';
+import { loginPilot, registerPilot, saveCheckpoint, saveHighScore, supabase } from './game/supabase';
+import { initDictionary } from './game/words';
 
 export default function App() {
   // Profile settings (persisted in localStorage)
@@ -81,6 +82,10 @@ export default function App() {
     checkDevice();
     window.addEventListener('resize', checkDevice);
     return () => window.removeEventListener('resize', checkDevice);
+  }, []);
+
+  useEffect(() => {
+    initDictionary();
   }, []);
 
   // Restore session from sessionStorage, local storage backup, or guest memory on mount
@@ -530,6 +535,9 @@ export default function App() {
   const handleSaveCheckpoint = async (checkpointLevel) => {
     if (isMultiplayer) return;
 
+    const isGuest = username ? username.toUpperCase().startsWith('GUEST') : true;
+    if (isGuest) return; // Guests get no save points!
+
     setAutoSaveToast(true);
     setTimeout(() => setAutoSaveToast(false), 2500);
 
@@ -695,6 +703,14 @@ export default function App() {
         username: username,
         score: finalScore
       }));
+    }
+
+    // Save high score to Supabase if logged in (not a guest)
+    const isGuest = username ? username.toUpperCase().startsWith('GUEST') : true;
+    if (!isGuest && isLoggedIn) {
+      saveHighScore(username, finalScore).catch(err => {
+        console.error('Failed to save high score to Supabase:', err);
+      });
     }
   };
 

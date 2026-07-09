@@ -110,6 +110,90 @@ export const WORDS_EXPERT_RARE = [
   'asymmetry', 'atmospheres', 'atmospheric', 'attainability', 'audibilities', 'averagenesses', 'aversionboard'
 ];
 
+export async function initDictionary() {
+  try {
+    const response = await fetch('/dictionary.txt');
+    if (!response.ok) throw new Error('Fetch failed');
+    const text = await response.text();
+    const words = text.split('\n').map(w => w.trim().toLowerCase()).filter(Boolean);
+    
+    // Group by length
+    const simple = [];
+    const medium = [];
+    const hard = [];
+    const expert = [];
+    
+    words.forEach(w => {
+      if (w.length >= 3 && w.length <= 4) simple.push(w);
+      else if (w.length >= 5 && w.length <= 6) medium.push(w);
+      else if (w.length >= 7 && w.length <= 9) hard.push(w);
+      else if (w.length >= 10) expert.push(w);
+    });
+
+    const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+
+    // Helper to ensure A-Z coverage in the base categories
+    const ensureAlphabetCoverage = (list, fallbacks) => {
+      const lettersPresent = new Set(list.map(w => w[0]));
+      alphabet.forEach(letter => {
+        if (!lettersPresent.has(letter)) {
+          const letterFallbacks = fallbacks.filter(w => w[0] === letter);
+          if (letterFallbacks.length > 0) {
+            list.push(...letterFallbacks);
+          } else {
+            // Absolute minimal fallback if both are missing
+            list.push(letter + 'ar'); 
+          }
+        }
+      });
+    };
+
+    ensureAlphabetCoverage(simple, [...WORDS_SIMPLE_COMMON, ...WORDS_SIMPLE_RARE]);
+    ensureAlphabetCoverage(medium, [...WORDS_MEDIUM_COMMON, ...WORDS_MEDIUM_RARE]);
+    ensureAlphabetCoverage(hard, [...WORDS_HARD_COMMON, ...WORDS_HARD_RARE]);
+    ensureAlphabetCoverage(expert, [...WORDS_EXPERT_COMMON, ...WORDS_EXPERT_RARE]);
+
+    // Split list into 75% Common (high frequency) and 25% Rare (low frequency)
+    const splitList = (list, targetCommon, targetRare) => {
+      const splitIdx = Math.floor(list.length * 0.75);
+      const common = list.slice(0, splitIdx);
+      const rare = list.slice(splitIdx);
+      
+      // Safety check: Make sure both Common and Rare sub-lists have A-Z coverage
+      const ensureSublistCoverage = (sublist, fullList) => {
+        const letters = new Set(sublist.map(w => w[0]));
+        alphabet.forEach(letter => {
+          if (!letters.has(letter)) {
+            const matches = fullList.filter(w => w[0] === letter);
+            if (matches.length > 0) {
+              sublist.push(matches[Math.floor(Math.random() * matches.length)]);
+            }
+          }
+        });
+      };
+
+      ensureSublistCoverage(common, list);
+      ensureSublistCoverage(rare, list);
+
+      // Mutate target lists in-place so reference remains correct
+      targetCommon.length = 0;
+      targetCommon.push(...common);
+      
+      targetRare.length = 0;
+      targetRare.push(...rare);
+    };
+
+    splitList(simple, WORDS_SIMPLE_COMMON, WORDS_SIMPLE_RARE);
+    splitList(medium, WORDS_MEDIUM_COMMON, WORDS_MEDIUM_RARE);
+    splitList(hard, WORDS_HARD_COMMON, WORDS_HARD_RARE);
+    splitList(expert, WORDS_EXPERT_COMMON, WORDS_EXPERT_RARE);
+
+    console.log(`Dictionary loaded: Simple=${WORDS_SIMPLE_COMMON.length + WORDS_SIMPLE_RARE.length}, Medium=${WORDS_MEDIUM_COMMON.length + WORDS_MEDIUM_RARE.length}, Hard=${WORDS_HARD_COMMON.length + WORDS_HARD_RARE.length}, Expert=${WORDS_EXPERT_COMMON.length + WORDS_EXPERT_RARE.length}`);
+  } catch (e) {
+    console.error('Failed to load dictionary.txt, using built-in fallbacks:', e);
+  }
+}
+
 export function getWordForEnemy(type, waveNumber, usedSet) {
   let commonCandidates = [];
   let rareCandidates = [];

@@ -116,3 +116,32 @@ export async function saveCheckpoint(username, checkpointLevel) {
       .eq('username', normalizedUser);
   }
 }
+
+export async function saveHighScore(username, score) {
+  if (!supabase || !username) return;
+
+  const normalizedUser = username.trim().toLowerCase();
+
+  try {
+    // 1. Fetch current high score from profiles table
+    const { data: profile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('high_score')
+      .eq('username', normalizedUser)
+      .maybeSingle();
+
+    if (fetchError || !profile) return;
+
+    const currentHighScore = profile.high_score || 0;
+
+    // 2. Update if new score is higher
+    if (score > currentHighScore) {
+      await supabase
+        .from('profiles')
+        .update({ high_score: score })
+        .eq('username', normalizedUser);
+    }
+  } catch (err) {
+    console.error('Supabase saveHighScore error:', err);
+  }
+}

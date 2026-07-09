@@ -2135,7 +2135,7 @@ export default function GameCanvas({
         state.meteorShowerTriggered = false; // Reset meteor shower status
         state.lastSpawnTime = Date.now(); // Reset spawn timing on intro end to give clients sync headroom
         if (isHost && isPrime(state.wave) && state.wave % 10 !== 0) {
-          if (Math.random() < 0.45) {
+          if (Math.random() < 0.35) { // Spawn chance reduced from 45% to 35%
             spawnAnomalyMiniBoss();
           }
         }
@@ -2744,9 +2744,9 @@ export default function GameCanvas({
     }
 
     state.bullets.forEach(bullet => {
-      let bulletFactor = 1.0;
+      let bulletFactor = 0.85; // Base bullet speed reduced by 15%
       if (state.chronosDriveTime > 0) {
-        bulletFactor = 0.3;
+        bulletFactor = 0.255; // 0.3 * 0.85
       }
       
       let speedFactor = 1.0;
