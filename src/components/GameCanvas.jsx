@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { GameAudio } from '../game/audio';
 import { getWordForEnemy } from '../game/words';
@@ -122,7 +123,7 @@ export default function GameCanvas({
     
     stateRef.current.wave = waveVal;
     stateRef.current.score = scoreVal;
-    stateRef.current.waveTotalToSpawn = 10 + waveVal * 4;
+    stateRef.current.waveTotalToSpawn = Math.round((10 + waveVal * 4) * 0.8);
     
     if (waveVal === 1) {
       stateRef.current.usedWords.clear();
@@ -994,7 +995,7 @@ export default function GameCanvas({
             state.enemies = [];
             state.bullets = [];
             state.waveSpawnedCount = 0;
-            state.waveTotalToSpawn = 10 + data.wave * 4;
+            state.waveTotalToSpawn = Math.round((10 + data.wave * 4) * 0.8);
             // Partially heal client player and teammates between waves (refill by 50)
             state.health = Math.min(100, state.health + 50);
             if (state.teammates) {
@@ -1597,8 +1598,16 @@ export default function GameCanvas({
     const char = key.toLowerCase();
     
     // Check if we are typing letters on single-character bullets (white)
-    // Anyone can type/cancel bullets in co-op!
-    const bulletToHitIndex = state.bullets.findIndex(b => b.letter.toLowerCase() === char);
+    // Prioritize the bullet closest to the bottom (highest y) matching the typed character
+    let bulletToHitIndex = -1;
+    let maxBulletY = -9999;
+    state.bullets.forEach((b, idx) => {
+      if (b.letter.toLowerCase() === char && b.y > maxBulletY) {
+        maxBulletY = b.y;
+        bulletToHitIndex = idx;
+      }
+    });
+
     if (bulletToHitIndex !== -1) {
       const bullet = state.bullets[bulletToHitIndex];
       // Cancel it locally
@@ -1640,6 +1649,10 @@ export default function GameCanvas({
         }
         if (enemy.isInvulnerable) {
           GameAudio.play('shield_hit', getPan(enemy.x));
+          // Clear active target lock since it became invulnerable
+          state.activeWordId = null;
+          enemy.targetIndex = 0;
+          tryAcquireNewTarget(char);
           return; // Linked target is invulnerable!
         }
         const nextChar = enemy.word && enemy.word[enemy.targetIndex] ? enemy.word[enemy.targetIndex].toLowerCase() : '';
@@ -2338,8 +2351,11 @@ export default function GameCanvas({
       if (e.type === 'shield_linker') {
         if (!isMultiplayer || isHost) {
           if (!e.shieldLinkedEnemyId || !state.enemies.some(target => target.id === e.shieldLinkedEnemyId)) {
-            // Find a target that is NOT a linker, boss, or anomaly
-            const candidates = state.enemies.filter(cand => cand.id !== e.id && cand.type !== 'shield_linker' && cand.type !== 'boss' && cand.type !== 'anomaly');
+            // Find a target that is drone or interceptor (elite)
+            const candidates = state.enemies.filter(cand => 
+              cand.id !== e.id && 
+              (cand.type === 'drone' || cand.type === 'interceptor')
+            );
             if (candidates.length > 0) {
               e.shieldLinkedEnemyId = candidates[Math.floor(Math.random() * candidates.length)].id;
               GameAudio.play('shield_activate');
@@ -2744,9 +2760,9 @@ export default function GameCanvas({
     }
 
     state.bullets.forEach(bullet => {
-      let bulletFactor = 0.85; // Base bullet speed reduced by 15%
+      let bulletFactor = 0.75; // Base bullet speed reduced by 25%
       if (state.chronosDriveTime > 0) {
-        bulletFactor = 0.255; // 0.3 * 0.85
+        bulletFactor = 0.225; // 0.3 * 0.75
       }
       
       let speedFactor = 1.0;
@@ -3750,7 +3766,7 @@ export default function GameCanvas({
     state.enemies = [];
     state.bullets = [];
     state.waveSpawnedCount = 0;
-    state.waveTotalToSpawn = 10 + nextWaveNum * 4;
+    state.waveTotalToSpawn = Math.round((10 + nextWaveNum * 4) * 0.8);
     
     state.targetNebulaColor = {
       h: (260 + nextWaveNum * 30) % 360,
