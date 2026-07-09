@@ -62,8 +62,8 @@ export const WORDS_HARD_COMMON = [
 export const WORDS_HARD_RARE = [
   'adjoint', 'admiral', 'aerator', 'affects', 'agendas', 'alchemy', 'alcohol', 'algebra', 'aliases', 'aligned', 'alleged',
   'allergy', 'alliance', 'allowed', 'alloyed', 'almanac', 'alumnae', 'alumni', 'amnesia', 'android', 'angular', 'annexed',
-  'annuity', 'anysize', 'aquifer', 'arbitry', 'arcades', 'archery', 'archive', 'ardency', 'ardours', 'armored', 'arousal',
-  'arraign', 'arrange', 'arrayed', 'arrears', 'arrival', 'arrived', 'arrives', 'arterial', 'ascorb', 'vectors', 'vehement',
+  'annuity', 'aquifer', 'arbitrage', 'arcades', 'archery', 'archive', 'ardency', 'ardours', 'armored', 'arousal',
+  'arraign', 'arrange', 'arrayed', 'arrears', 'arrival', 'arrived', 'arrives', 'arterial', 'ascorbic', 'vectors', 'vehement',
   'velvety', 'venomous', 'verging', 'versant', 'vespers', 'vetoed', 'vicarage', 'visages', 'spyware', 'malware', 'hackers',
   'exploit', 'payload', 'release', 'station', 'reactor', 'warhead', 'cruiser', 'circuit', 'booster', 'horizon', 'cluster',
   'optical', 'thermal', 'turbine', 'missile'
@@ -87,27 +87,27 @@ export const WORDS_EXPERT_COMMON = [
   'assurances', 'astonishing', 'astonishment', 'athleticism', 'attachments', 'attainment', 'attainments', 'attempting',
   'attendance', 'attendances', 'attendants', 'attentively', 'attentiveness', 'attitudes', 'attorneys', 'attractions',
   'attractive', 'attractiveness', 'attributable', 'attributes', 'attribution', 'attributive', 'audibilities', 'auditorium',
-  'auditorsboard', 'augmentative', 'augmentation', 'authentically', 'authenticate', 'authentication', 'authenticity',
-  'authorities', 'authorization', 'authorized', 'authorsboard', 'authorship', 'autobiography', 'autocracies', 'autographing',
+  'augmentative', 'augmentation', 'authentically', 'authenticate', 'authentication', 'authenticity',
+  'authorities', 'authorization', 'authorized', 'authorship', 'autobiography', 'autocracies', 'autographing',
   'autoluminescent', 'automated', 'automatic', 'automatically', 'automation', 'automobiles', 'autonomous', 'autonomously',
-  'availability', 'averageboard', 'avoidances', 'awakening', 'awesomeness'
+  'availability', 'avoidances', 'awakening', 'awesomeness'
 ];
 
 export const WORDS_EXPERT_RARE = [
-  'abnormalities', 'abolitionist', 'abovementioned', 'abrasiveness', 'absorptivity', 'abstractness', 'abundantries',
+  'abnormalities', 'abolitionist', 'abovementioned', 'abrasiveness', 'absorptivity', 'abstractness', 'abundantly',
   'academician', 'accelerated', 'acceleration', 'accelerators', 'acceptability', 'acceptances', 'accessibility',
   'accessories', 'acclimatization', 'acidification', 'acoustically', 'actionability', 'activations', 'adaptability',
   'adaptations', 'administrate', 'admissibility', 'admonitions', 'adoptability', 'adorableness', 'adventurers', 'aerodynamic',
   'aerodynamics', 'aerospace', 'aesthetician', 'aesthetics', 'affectation', 'ambivalence', 'ambivalent', 'ambitiousness',
   'amelioration', 'amenability', 'amiability', 'amicableness', 'ammunition', 'amortization', 'amphitheatre', 'amplification',
   'amusements', 'anachronism', 'analogous', 'analytical', 'analyzers', 'anarchists', 'anatomical', 'ancestries', 'anchorage',
-  'anesthesiology', 'angrinesses', 'angularity', 'animations', 'antagonism', 'antagonistic', 'antecedents', 'anxiousness',
+  'anesthesiology', 'angularity', 'animations', 'antagonism', 'antagonistic', 'antecedents', 'anxiousness',
   'appareling', 'appellations', 'appendicitis', 'appetizers', 'appetizing', 'applicability', 'application', 'applicators',
-  'apportioned', 'apprentice', 'approvalboard', 'approvingly', 'aquaculture', 'arbitrarily', 'arbitrary', 'arbitrator',
-  'arithmetical', 'armaments', 'arrogancy', 'arrowheads', 'artificiality', 'artisticity', 'artlessness', 'aspirinboard',
+  'apportioned', 'apprentice', 'approvingly', 'aquaculture', 'arbitrarily', 'arbitrary', 'arbitrator',
+  'arithmetical', 'armaments', 'arrogancy', 'arrowheads', 'artificiality', 'artisticity', 'artlessness',
   'assailants', 'assassination', 'assemblages', 'assemblies', 'assemblers', 'assertions', 'assessable', 'assessment',
   'assimilated', 'assimilation', 'astrological', 'astronautics', 'astronomers', 'astronomical', 'astrophysics', 'asymmetric',
-  'asymmetry', 'atmospheres', 'atmospheric', 'attainability', 'audibilities', 'averagenesses', 'aversionboard'
+  'asymmetry', 'atmospheres', 'atmospheric', 'attainability', 'audibilities'
 ];
 
 export async function initDictionary() {
