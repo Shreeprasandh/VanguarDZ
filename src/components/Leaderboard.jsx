@@ -119,7 +119,7 @@ export default function Leaderboard({ leaderboard, onClose }) {
                   </span>
                 </span>
                 <span style={{ color: 'var(--neon-blue)', fontWeight: 'bold' }}>
-                  {item.score.toLocaleString()} PTS
+                  {item.score.toLocaleString()}
                 </span>
               </div>
             ))}
