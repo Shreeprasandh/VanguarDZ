@@ -75,6 +75,7 @@ export default function App() {
 
   // Gameplay scoring caches
   const [gameStats, setGameStats] = useState({ score: 0, wave: 1 });
+  const [bossShieldsCount, setBossShieldsCount] = useState(0);
 
   const [isMobileDevice, setIsMobileDevice] = useState(false);
 
@@ -772,6 +773,7 @@ export default function App() {
   const handleGameOver = (finalScore, waveReached, stats) => {
     setGameStats({ score: finalScore, wave: waveReached });
     setTypingStats(stats || []);
+    setBossShieldsCount(0);
     changeScreenWithFade('gameover');
 
     // Submit score to persistent leaderboard on game over if solo
@@ -793,6 +795,7 @@ export default function App() {
   };
 
   const handleReturnMenu = () => {
+    setBossShieldsCount(0);
     if (isMultiplayer) {
       handleLeaveRoom();
     } else {
@@ -887,6 +890,8 @@ export default function App() {
             initialScore={gameStats.score}
             onDockStart={handleDockStart}
             onSaveCheckpoint={handleSaveCheckpoint}
+            bossShieldsCount={bossShieldsCount}
+            onBossShieldsChange={setBossShieldsCount}
           />
         );
 

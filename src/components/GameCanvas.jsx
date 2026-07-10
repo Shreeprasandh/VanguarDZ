@@ -31,7 +31,9 @@ export default function GameCanvas({
   initialWave,
   initialScore,
   onDockStart,
-  onSaveCheckpoint
+  onSaveCheckpoint,
+  bossShieldsCount = 0,
+  onBossShieldsChange
 }) {
   const getColorHex = (colorName) => {
     if (colorName === 'red') return '#cf4042'; // Muted Crimson
@@ -105,7 +107,7 @@ export default function GameCanvas({
     bossShieldActive: false,
     bossShieldTime: 0,
     bossShieldHealth: 0,
-    bossShieldsCount: 0,
+    bossShieldsCount: bossShieldsCount || 0,
     shieldClaims: [],
     players: players || [],
     correctStrikes: 0,
@@ -997,6 +999,14 @@ export default function GameCanvas({
               longestWord: data.longestWord,
               favoriteWord: data.favoriteWord
             };
+            if (state.isWaitingForStats && state.compileAndFinishFn) {
+              const expectedTeammates = (state.players || []).length - 1;
+              const currentTeammatesCount = Object.keys(state.teammateStats).length;
+              if (currentTeammatesCount >= expectedTeammates) {
+                state.isWaitingForStats = false;
+                setTimeout(state.compileAndFinishFn, 500);
+              }
+            }
             break;
           }
 
@@ -1614,7 +1624,7 @@ export default function GameCanvas({
     if (key === '5' || key === '7') {
       if (state.bossShieldsCount > 0 && state.bossShieldTime <= 0) {
         state.bossShieldsCount -= 1;
-        setBossShields(state.bossShieldsCount);
+        updateBossShields(state.bossShieldsCount);
         state.bossShieldActive = true;
         state.bossShieldTime = 8000;
         state.bossShieldHealth = 3;
@@ -2081,7 +2091,7 @@ export default function GameCanvas({
           createExplosion(targetX, targetY, '#38bdf8', 12, false);
           // Cap maximum stored shields to 3, ignore additional claims
           state.bossShieldsCount = Math.min(3, (state.bossShieldsCount || 0) + 1);
-          setBossShields(state.bossShieldsCount);
+          updateBossShields(state.bossShieldsCount);
         }
       }
     }
@@ -3153,13 +3163,13 @@ export default function GameCanvas({
     if (!canvas) return;
 
     const count = 4 + Math.floor(Math.random() * 3); // 4 to 6 meteors
-    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    const chars = '+)-*&^%$#@!?/=<>[]{}';
     const newMeteors = [];
     
     for (let i = 0; i < count; i++) {
       const char = chars[Math.floor(Math.random() * chars.length)];
       const x = canvas.width * 0.15 + Math.random() * (canvas.width * 0.7);
-      const speed = 2.0 + Math.random() * 1.5;
+      const speed = (2.0 + Math.random() * 1.5) * 0.5; // Reduced by 50%
       
       const meteor = {
         id: `meteor-${Math.random().toString(36).substring(2, 9)}`,
@@ -4085,6 +4095,8 @@ export default function GameCanvas({
 
   const triggerGameOver = (finalScore, waveReached) => {
     const state = stateRef.current;
+    if (state.isLocalGameOverWaiting) return;
+    state.isLocalGameOverWaiting = true;
     state.isLocalGameOver = true;
     GameAudio.stopMusic();
     GameAudio.play('explosionPlayer');
@@ -4130,6 +4142,8 @@ export default function GameCanvas({
       favoriteWord: favoriteWord
     };
 
+    state.localStats = localStats;
+
     // 2. Broadcast local stats if multiplayer
     if (isMultiplayer && socket) {
       socket.send(JSON.stringify({
@@ -4150,16 +4164,37 @@ export default function GameCanvas({
       onSaveCheckpoint(100);
     }
 
-    setTimeout(() => {
-      // Compile stats (local + teammate stats)
-      const allStats = [localStats];
+    const compileAndFinish = () => {
+      if (state.statsTimeoutId) {
+        clearTimeout(state.statsTimeoutId);
+        state.statsTimeoutId = null;
+      }
+      const allStats = [state.localStats];
       if (isMultiplayer && state.teammateStats) {
         Object.values(state.teammateStats).forEach(stat => {
           allStats.push(stat);
         });
       }
       onGameOver(finalScore, waveReached, allStats);
-    }, 1500);
+    };
+
+    if (isMultiplayer && state.players && state.players.length > 1) {
+      const expectedTeammates = state.players.length - 1;
+      const currentTeammatesCount = Object.keys(state.teammateStats || {}).length;
+
+      if (currentTeammatesCount >= expectedTeammates) {
+        setTimeout(compileAndFinish, 1500);
+      } else {
+        state.isWaitingForStats = true;
+        state.compileAndFinishFn = compileAndFinish;
+        state.statsTimeoutId = setTimeout(() => {
+          state.isWaitingForStats = false;
+          compileAndFinish();
+        }, 4500);
+      }
+    } else {
+      setTimeout(compileAndFinish, 1500);
+    }
   };
 
   // Advance level/wave
@@ -6084,7 +6119,13 @@ export default function GameCanvas({
   };
   const [charge, setCharge] = useState(0);
   const [cooldowns, setCooldowns] = useState([0, 0, 0]);
-  const [bossShields, setBossShields] = useState(0);
+  const [bossShields, setBossShields] = useState(bossShieldsCount);
+  const updateBossShields = (count) => {
+    setBossShields(count);
+    if (onBossShieldsChange) {
+      onBossShieldsChange(count);
+    }
+  };
   const [bossShieldActiveTime, setBossShieldActiveTime] = useState(0);
   const [statusClocks, setStatusClocks] = useState({ overclock: 0, decoy: 0, nebula: 0, stabilizer: 0, overdrive: 0, reflector: 0, hologram: 0 });
 
