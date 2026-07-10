@@ -622,6 +622,7 @@ wss.on('connection', (ws) => {
               playerId: data.playerId
             }, socketId);
           }
+          break;
         }
 
         case 'TYPING_STATS_SHARE': {
