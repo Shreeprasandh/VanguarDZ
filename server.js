@@ -20,46 +20,6 @@ const wss = new WebSocketServer({ server });
 const onlinePlayers = new Map(); // socketId -> { socket, username, score, level, state: 'lobby'|'playing', roomId }
 const rooms = new Map(); // roomId -> { code, players: [], state: 'lobby'|'playing', wave: 1, wordTargetProgress: {}, hostId }
 
-const LEADERBOARD_FILE = path.join(__dirname, 'leaderboard.json');
-let highScores = [];
-try {
-  if (fs.existsSync(LEADERBOARD_FILE)) {
-    highScores = JSON.parse(fs.readFileSync(LEADERBOARD_FILE, 'utf8'));
-  }
-} catch (e) {
-  console.log('Failed to load leaderboard.json, starting empty.', e);
-}
-
-if (!highScores || highScores.length === 0) {
-  highScores = [
-    { username: 'Valkyrie-X', score: 120500, date: new Date().toISOString() },
-    { username: 'Starbuck', score: 95400, date: new Date().toISOString() },
-    { username: 'Maverick', score: 88200, date: new Date().toISOString() },
-    { username: 'Apollo-11', score: 75000, date: new Date().toISOString() },
-    { username: 'Solo-Shot', score: 62300, date: new Date().toISOString() },
-    { username: 'Skywalker', score: 55000, date: new Date().toISOString() },
-    { username: 'Riddick', score: 48900, date: new Date().toISOString() },
-    { username: 'Deckard', score: 35600, date: new Date().toISOString() },
-    { username: 'Ripley', score: 28400, date: new Date().toISOString() },
-    { username: 'Cooper-Tars', score: 15000, date: new Date().toISOString() }
-  ];
-  try {
-    fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(highScores, null, 2));
-  } catch (err) {
-    console.error('Failed to write default leaderboard.json', err);
-  }
-}
-
-function broadcastHighScores() {
-  const sortedTop10 = [...highScores].sort((a, b) => b.score - a.score).slice(0, 10);
-  const payload = JSON.stringify({ type: 'LEADERBOARD_UPDATE', leaderboard: sortedTop10 });
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(payload);
-    }
-  });
-}
-
 // Helpers
 function generateRoomCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -68,10 +28,6 @@ function generateRoomCode() {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;
-}
-
-function broadcastLeaderboard() {
-  broadcastHighScores();
 }
 
 function sendToRoom(roomId, messageObj, excludeSocketId = null) {
@@ -128,9 +84,6 @@ wss.on('connection', (ws) => {
     socketId: socketId
   }));
 
-  // Send initial leaderboard update to new connector
-  broadcastHighScores();
-
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message);
@@ -141,33 +94,10 @@ wss.on('connection', (ws) => {
         case 'REGISTER': {
           player.username = data.username || player.username;
           if (data.color) player.color = data.color;
-          broadcastHighScores();
           break;
         }
 
         case 'SUBMIT_SCORE': {
-          const { username, score } = data;
-          if (!username || typeof score !== 'number') break;
-
-          const existingIndex = highScores.findIndex(h => h.username.toLowerCase() === username.toLowerCase());
-          if (existingIndex !== -1) {
-            if (score > highScores[existingIndex].score) {
-              highScores[existingIndex].score = score;
-              highScores[existingIndex].date = new Date().toISOString();
-            }
-          } else {
-            highScores.push({ username, score, date: new Date().toISOString() });
-          }
-
-          highScores.sort((a, b) => b.score - a.score);
-
-          try {
-            fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(highScores, null, 2));
-          } catch (err) {
-            console.error('Failed to write leaderboard.json', err);
-          }
-
-          broadcastHighScores();
           break;
         }
 
@@ -228,7 +158,6 @@ wss.on('connection', (ws) => {
             maxPlayers: room.maxPlayers
           }));
           
-          broadcastLeaderboard();
           break;
         }
 
@@ -301,7 +230,6 @@ wss.on('connection', (ws) => {
             maxPlayers: room.maxPlayers
           });
 
-          broadcastLeaderboard();
           break;
         }
 
@@ -476,7 +404,6 @@ wss.on('connection', (ws) => {
             players: getRoomPlayersData(code)
           });
 
-          broadcastLeaderboard();
           break;
         }
 
@@ -678,7 +605,6 @@ wss.on('connection', (ws) => {
                 if (gp) gp.state = 'lobby';
               });
             }
-            broadcastLeaderboard();
           }
           break;
         }
@@ -766,7 +692,6 @@ wss.on('connection', (ws) => {
   ws.on('close', () => {
     handleLeaveRoom(socketId);
     onlinePlayers.delete(socketId);
-    broadcastLeaderboard();
   });
 });
 

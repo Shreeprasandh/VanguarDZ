@@ -317,10 +317,6 @@ export default function App() {
               setLocalSocketId(data.socketId);
               break;
 
-            case 'LEADERBOARD_UPDATE':
-              setLeaderboard(data.leaderboard);
-              break;
-
             case 'ROOM_CREATED':
               setRoomCode(data.roomCode);
               setPlayers(data.players);
