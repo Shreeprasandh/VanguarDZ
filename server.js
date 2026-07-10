@@ -30,6 +30,26 @@ try {
   console.log('Failed to load leaderboard.json, starting empty.', e);
 }
 
+if (!highScores || highScores.length === 0) {
+  highScores = [
+    { username: 'Valkyrie-X', score: 120500, date: new Date().toISOString() },
+    { username: 'Starbuck', score: 95400, date: new Date().toISOString() },
+    { username: 'Maverick', score: 88200, date: new Date().toISOString() },
+    { username: 'Apollo-11', score: 75000, date: new Date().toISOString() },
+    { username: 'Solo-Shot', score: 62300, date: new Date().toISOString() },
+    { username: 'Skywalker', score: 55000, date: new Date().toISOString() },
+    { username: 'Riddick', score: 48900, date: new Date().toISOString() },
+    { username: 'Deckard', score: 35600, date: new Date().toISOString() },
+    { username: 'Ripley', score: 28400, date: new Date().toISOString() },
+    { username: 'Cooper-Tars', score: 15000, date: new Date().toISOString() }
+  ];
+  try {
+    fs.writeFileSync(LEADERBOARD_FILE, JSON.stringify(highScores, null, 2));
+  } catch (err) {
+    console.error('Failed to write default leaderboard.json', err);
+  }
+}
+
 function broadcastHighScores() {
   const sortedTop10 = [...highScores].sort((a, b) => b.score - a.score).slice(0, 10);
   const payload = JSON.stringify({ type: 'LEADERBOARD_UPDATE', leaderboard: sortedTop10 });
