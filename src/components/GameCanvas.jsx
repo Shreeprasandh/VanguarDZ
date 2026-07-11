@@ -3450,16 +3450,21 @@ export default function GameCanvas({
     // Spawn warnings siren loop or flash triggers
     GameAudio.play('emp');
 
-    if (isMultiplayer && socket) {
+    const players = state.players || [];
+    const isHost = !isMultiplayer || (players.find(p => p.socketId === socket?.id || p.username === username)?.isHost);
+
+    if (isHost && isMultiplayer && socket) {
       socket.send(JSON.stringify({
         type: 'BOSS_WARNING'
       }));
     }
 
-    setTimeout(() => {
-      if (state.isLocalGameOver) return;
-      spawnBossFight();
-    }, 3000);
+    if (isHost) {
+      setTimeout(() => {
+        if (state.isLocalGameOver) return;
+        spawnBossFight();
+      }, 3000);
+    }
   };
 
   // Spawn Boss logic
