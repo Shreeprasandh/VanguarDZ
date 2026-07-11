@@ -90,7 +90,33 @@ export const WORDS_EXPERT_COMMON = [
   'augmentative', 'augmentation', 'authentically', 'authenticate', 'authentication', 'authenticity',
   'authorities', 'authorization', 'authorized', 'authorship', 'autobiography', 'autocracies', 'autographing',
   'autoluminescent', 'automated', 'automatic', 'automatically', 'automation', 'automobiles', 'autonomous', 'autonomously',
-  'availability', 'avoidances', 'awakening', 'awesomeness'
+  'availability', 'avoidances', 'awakening', 'awesomeness',
+  
+  // B-Z common words
+  'benevolent', 'biodegradable', 'backtracking', 'bibliography', 'biochemistry', 'biotechnology',
+  'characters', 'cryptography', 'cybersecurity', 'calibration', 'collaborative', 'communication',
+  'development', 'declaration', 'diagnostics', 'destructuring', 'distributed', 'documentation',
+  'engineering', 'environment', 'experimental', 'establishment', 'evolutionary', 'extrapolate',
+  'foundation', 'fluctuation', 'fractional', 'fundamental', 'functionality', 'forecasting',
+  'gravitation', 'generational', 'geographical', 'geopolitics', 'gigaflops', 'globalization',
+  'holographic', 'hyperactive', 'hypothetical', 'hierarchical', 'heterogeneous', 'homeostasis',
+  'integration', 'information', 'interactive', 'intelligence', 'interpreter', 'installation',
+  'justification', 'jurisdiction', 'jeopardizing', 'journalistic', 'juxtaposing', 'judgmental',
+  'kilobytes', 'kineticist', 'keyboardist', 'kaleidoscope', 'kryptonians', 'kinematics',
+  'limitations', 'logarithmic', 'legislative', 'luminescence', 'localization', 'lexicography',
+  'multiplayer', 'mathematics', 'measurement', 'methodology', 'metropolitan', 'microscopic',
+  'navigation', 'negotiation', 'nationality', 'neuroscience', 'nominations', 'neutralization',
+  'observation', 'orientation', 'organization', 'overclocking', 'optimization', 'oscilloscope',
+  'performance', 'programming', 'parameters', 'probability', 'production', 'personality',
+  'quantifiable', 'qualitative', 'quantitative', 'questionable', 'quarantined', 'quicksilver',
+  'replication', 'repository', 'responsive', 'resolution', 'redistribute', 'restoration',
+  'simulation', 'stabilizer', 'structuring', 'sovereignty', 'synchronize', 'superconduct',
+  'technology', 'temperature', 'theoretical', 'termination', 'translation', 'transmission',
+  'ultraviolet', 'utilization', 'unification', 'universally', 'undertaking', 'unreachable',
+  'validation', 'vulnerability', 'visualization', 'vegetation', 'ventilation', 'verification',
+  'wavelength', 'weatherproof', 'widespread', 'windshield', 'workstation', 'waterproofing',
+  'xenophobia', 'xylophonist', 'xerography', 'yellowstone', 'yesteryears', 'yieldability',
+  'zoological', 'zookeeper', 'zincification', 'zealously'
 ];
 
 export const WORDS_EXPERT_RARE = [
@@ -107,7 +133,34 @@ export const WORDS_EXPERT_RARE = [
   'arithmetical', 'armaments', 'arrogancy', 'arrowheads', 'artificiality', 'artisticity', 'artlessness',
   'assailants', 'assassination', 'assemblages', 'assemblies', 'assemblers', 'assertions', 'assessable', 'assessment',
   'assimilated', 'assimilation', 'astrological', 'astronautics', 'astronomers', 'astronomical', 'astrophysics', 'asymmetric',
-  'asymmetry', 'atmospheres', 'atmospheric', 'attainability', 'audibilities'
+  'asymmetry', 'atmospheres', 'atmospheric', 'attainability', 'audibilities',
+
+  // B-Z rare/technical words
+  'backtracking', 'belligerent', 'bewildering', 'biochemical', 'biosphere',
+  'catastrophic', 'characteristic', 'circumference', 'codification', 'crystallize',
+  'decommission', 'deceleration', 'deconstruct', 'defibrillator', 'disintegrate',
+  'electromagnet', 'environmental', 'extracellular', 'experimentalist',
+  'flammability', 'fluorescence', 'fragmentation', 'ferromagnetic',
+  'gastronomics', 'geostationary', 'gravitational', 'giga-electron',
+  'hydrodynamics', 'hypervelocity', 'hyper-drive', 'hypothalamus',
+  'imperfection', 'infrastructure', 'interstellar', 'interferometer',
+  'juxtaposition', 'juxtaposed', 'jaw-dropping', 'judgment-call',
+  'krypton-filled', 'kineticists', 'kaleidoscopic', 'kitchenware',
+  'luminescent', 'liquefaction', 'logician', 'long-lasting',
+  'macroscopic', 'meteorological', 'multithreading', 'megabytes',
+  'neuroscience', 'nanotechnology', 'non-conductive', 'nebular-dust',
+  'oscillators', 'overheating', 'overclockers', 'orthogonal',
+  'pathological', 'photosynthesis', 'photo-voltaic', 'propulsion',
+  'quadrilateral', 'quantum-level', 'quasi-stellar', 'quick-tempered',
+  'radioactivity', 'reverberation', 'recalibration', 'relativistic',
+  'spectrometer', 'superconductor', 'stratosphere', 'superstructure',
+  'thermodynamics', 'teleportation', 'trajectory', 'turbocharger',
+  'unpredictable', 'unprofessional', 'unprecedented', 'ultra-violet',
+  'viscosity', 'volumetric', 'vaporization', 'vector-calculus',
+  'weatherproofing', 'wind-tunnel', 'wavelengths', 'web-browsing',
+  'xenon-charged', 'xylophonists', 'xerographic', 'x-ray-emitter',
+  'youthfulness', 'yotta-bytes', 'yielding-point', 'yesterday-news',
+  'zero-gravity', 'zinc-plated', 'zoologists', 'zenith-point'
 ];
 
 export async function initDictionary() {
