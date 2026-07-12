@@ -50,7 +50,7 @@ Standard waves feature a maximum active limit on screen (**6** on waves 1–4, *
 | :--- | :--- | :--- | :--- | :--- |
 | **Drone** | Orange Fighter | Wave 1+ | `0.5` - `0.8` | Common, light unit. Moves straight or in gentle sines. |
 | **Interceptor** | Magenta Jet | Wave 3+ | `0.9` - `1.3` | Elite fast unit. Moves in complex zig-zag and cosine patterns. |
-| **Kamikaze** | Red Spiked Orb | Wave 5+ | Fast Scaling | Once they reach close range, they charge directly down at you. |
+| **Kamikaze** | Red Spiked Orb | Wave 5+ | Fast Scaling | Once they reach the center of the display, they charge directly down at you. |
 | **Cruiser** | Gold Gunship | Wave 9+ | `0.189` - `0.315` | Armored (2 HP). Has a queue of 2-3 words and fires single-letter plasma bullets (15 dmg). |
 | **Anomaly** | Purple Crystal | Wave 16+ | `0.045` | Mid-wave mini-boss (25% chance on Primes). Emits EMP pulses that lock abilities and scramble words. |
 | **Shield Linker** | Blue Support Barge | Wave 17+ | `0.32` - `0.44` | Links to exactly one Drone or Interceptor, making it invulnerable. Self-destructs if its target hits the player. |

@@ -777,20 +777,22 @@ export default function App() {
     changeScreenWithFade('gameover');
 
     // Submit score to persistent leaderboard on game over if solo
-    if (!isMultiplayer && socketRef.current && socketConnected) {
-      socketRef.current.send(JSON.stringify({
-        type: 'SUBMIT_SCORE',
-        username: username,
-        score: finalScore
-      }));
-    }
+    if (!isMultiplayer) {
+      if (socketRef.current && socketConnected) {
+        socketRef.current.send(JSON.stringify({
+          type: 'SUBMIT_SCORE',
+          username: username,
+          score: finalScore
+        }));
+      }
 
-    // Save high score to Supabase if logged in (not a guest)
-    const isGuest = username ? username.toUpperCase().startsWith('GUEST') : true;
-    if (!isGuest && isLoggedIn) {
-      saveHighScore(username, finalScore).catch(err => {
-        console.error('Failed to save high score to Supabase:', err);
-      });
+      // Save high score to Supabase if logged in (not a guest)
+      const isGuest = username ? username.toUpperCase().startsWith('GUEST') : true;
+      if (!isGuest && isLoggedIn) {
+        saveHighScore(username, finalScore).catch(err => {
+          console.error('Failed to save high score to Supabase:', err);
+        });
+      }
     }
   };
 

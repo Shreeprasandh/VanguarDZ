@@ -950,6 +950,13 @@ export default function GameCanvas({
                   if (syncE.shieldLinkedEnemyId !== undefined) {
                     localE.shieldLinkedEnemyId = syncE.shieldLinkedEnemyId;
                   }
+                  if (syncE.isCharged !== undefined && syncE.isCharged && !localE.isCharged) {
+                    localE.isCharged = true;
+                    localE.speed = 3.6;
+                    if (!isMultiplayer) {
+                      localE.color = 'red';
+                    }
+                  }
                 }
               });
               data.bullets.forEach(syncB => {
@@ -2545,15 +2552,23 @@ export default function GameCanvas({
     }
     
     state.enemies.forEach(enemy => {
-      // Kamikaze timer ticking
+      // Kamikaze activation on reaching vertical center of display
       if (enemy.type === 'kamikaze') {
         if (!enemy.isCharged) {
-          enemy.kamikazeTimer = (enemy.kamikazeTimer !== undefined ? enemy.kamikazeTimer : 240) - 1; // 4 seconds
-          if (enemy.kamikazeTimer <= 0) {
+          if (enemy.y >= canvas.height / 2) {
             enemy.isCharged = true;
             enemy.speed = 3.6; // Fast charge downwards!
             if (!isMultiplayer) {
               enemy.color = 'red';
+            }
+          } else {
+            // Estimate frames left to reach the center dynamically
+            const speedPerFrame = enemy.speed * baseSpeedMultiplier * multiplayerDifficulty * speedFactor;
+            const remainingDist = (canvas.height / 2) - enemy.y;
+            if (speedPerFrame > 0) {
+              enemy.kamikazeTimer = remainingDist / speedPerFrame;
+            } else if (enemy.kamikazeTimer === undefined) {
+              enemy.kamikazeTimer = 240; // Default fallback (4s)
             }
           }
         }
@@ -3035,7 +3050,8 @@ export default function GameCanvas({
           x: e.x / canvas.width,
           y: e.y / canvas.height,
           word: e.word,
-          shieldLinkedEnemyId: e.shieldLinkedEnemyId
+          shieldLinkedEnemyId: e.shieldLinkedEnemyId,
+          isCharged: e.isCharged
         }));
         const bulletPositions = state.bullets.map(b => ({ id: b.id, x: b.x / canvas.width, y: b.y / canvas.height }));
         const bossData = state.bossObj ? {
@@ -6171,7 +6187,7 @@ export default function GameCanvas({
           position: 'absolute',
           left: '1.5rem',
           top: '7.5rem',
-          display: 'flex',
+          display: paused ? 'none' : 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
           gap: '0.8rem',
@@ -6838,17 +6854,19 @@ export default function GameCanvas({
         )}
       </button>
 
-      <GameHUD
-        score={hudState.score}
-        multiplier={hudState.multiplier}
-        wave={hudState.wave}
-        isMultiplayer={isMultiplayer}
-        maxPlayers={maxPlayers}
-        teamPlayers={hudState.teammates}
-        health={hudState.health}
-        localPlayerId={socket?.id}
-        localPlayerColor={shipColor}
-      />
+      <div style={{ display: paused ? 'none' : 'block' }}>
+        <GameHUD
+          score={hudState.score}
+          multiplier={hudState.multiplier}
+          wave={hudState.wave}
+          isMultiplayer={isMultiplayer}
+          maxPlayers={maxPlayers}
+          teamPlayers={hudState.teammates}
+          health={hudState.health}
+          localPlayerId={socket?.id}
+          localPlayerColor={shipColor}
+        />
+      </div>
     </div>
   );
 }
