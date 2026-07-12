@@ -293,6 +293,21 @@ export default function App() {
       }, 1800);
 
       const socket = new WebSocket(socketUrl);
+      
+      // Patch socket.send to prevent InvalidStateError if connection closes/glitches
+      const originalSend = socket.send;
+      socket.send = function(data) {
+        if (socket.readyState === WebSocket.OPEN) {
+          try {
+            originalSend.call(socket, data);
+          } catch (e) {
+            console.error("Safe socket.send error:", e);
+          }
+        } else {
+          console.warn("Skipped socket.send: WebSocket state is " + socket.readyState);
+        }
+      };
+
       socketRef.current = socket;
 
       socket.onopen = () => {
