@@ -2125,6 +2125,24 @@ export default function GameCanvas({
       setBossShieldActiveTime(Math.ceil(state.bossShieldTime / 1000));
     }
 
+    // Laser fading
+    state.lasers.forEach(laser => {
+      laser.alpha -= 0.1;
+    });
+    state.lasers = state.lasers.filter(laser => laser.alpha > 0);
+
+    // Particles physics
+    state.particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.alpha = Math.max(0, p.life / 60);
+      p.life -= 1;
+      if (p.type === 'chunk') {
+        p.angle = (p.angle || 0) + (p.rotSpeed || 0.05);
+      }
+    });
+    state.particles = state.particles.filter(p => p.life > 0);
+
     // Docking sequence animation ticker
     if (state.waveState === 'docking') {
       state.dockingTimer -= 1;
@@ -2171,23 +2189,7 @@ export default function GameCanvas({
       }
     });
 
-    // Laser fading
-    state.lasers.forEach(laser => {
-      laser.alpha -= 0.1;
-    });
-    state.lasers = state.lasers.filter(laser => laser.alpha > 0);
 
-    // Particles physics
-    state.particles.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.alpha = Math.max(0, p.life / 60);
-      p.life -= 1;
-      if (p.type === 'chunk') {
-        p.angle = (p.angle || 0) + (p.rotSpeed || 0.05);
-      }
-    });
-    state.particles = state.particles.filter(p => p.life > 0);
 
     // If Wave Intro or Boss Warning
     if (state.waveState === 'intro' || state.waveState === 'boss_warning') {
