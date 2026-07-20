@@ -42,23 +42,88 @@ export default function GameOver({ score, wave, isMultiplayer, teamPlayers, typi
 
   const isSacrificeWave = wave >= 100;
 
+  const numPlayers = typingStats ? typingStats.length : 0;
+  const hasDetailedStats = numPlayers > 1;
+  const maxWidth = hasDetailedStats 
+    ? (numPlayers >= 3 ? '1100px' : '780px') 
+    : '500px';
+
+  const renderTypingDiagnostics = () => {
+    if (!typingStats || typingStats.length === 0) return null;
+    
+    return (
+      <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '1.2rem', textAlign: 'left' }}>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem', fontFamily: 'var(--font-display)', opacity: 0.6, textAlign: 'center' }}>
+          TYPING DIAGNOSTICS
+        </div>
+        <div className={`typing-stats-grid players-${typingStats.length}`}>
+          {typingStats.map((pStat) => (
+            <div key={pStat.socketId} className="player-stat-card">
+              <div className="stat-card-header">
+                <span style={{ color: pStat.color ? `var(--neon-${pStat.color})` : '#ffffff', fontWeight: 'bold' }}>
+                  {pStat.username}
+                </span>
+                <span style={{ color: 'var(--neon-blue)' }}>
+                  {(pStat.score !== undefined ? pStat.score : pStat.correctStrikes * 10).toLocaleString()} PTS
+                </span>
+              </div>
+              
+              <div className="stat-card-grid">
+                <div>
+                  <span>Speed:</span>{' '}
+                  <strong style={{ color: '#ffffff' }}>{pStat.wpm} WPM</strong>
+                </div>
+                <div>
+                  <span>Accuracy:</span>{' '}
+                  <strong style={{ color: '#a3e635' }}>{pStat.accuracy}%</strong>
+                </div>
+                <div>
+                  <span>Strikes:</span>{' '}
+                  <strong style={{ color: 'var(--neon-blue)' }}>{pStat.correctStrikes}</strong>
+                </div>
+                <div>
+                  <span>Typos:</span>{' '}
+                  <strong style={{ color: 'var(--neon-red)' }}>{pStat.typos}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2', borderTop: '1px dotted rgba(255, 255, 255, 0.05)', paddingTop: '0.4rem', marginTop: '0.2rem' }}>
+                  <span>Longest Word:</span>{' '}
+                  <strong style={{ color: '#f59e0b', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                    {pStat.longestWord || 'None'}
+                  </strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span>Favorite Word:</span>{' '}
+                  <strong style={{ color: '#c084fc', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                    {pStat.favoriteWord || 'None'}
+                  </strong>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="modal-overlay" style={{ background: 'rgba(0, 0, 0, 0.9)', backdropFilter: 'blur(10px)', zIndex: 1000 }}>
       <div 
-        className="glass-panel"
+        className="glass-panel glass-panel-custom"
         style={{ 
           position: 'relative',
-          maxWidth: '500px',
+          maxWidth: maxWidth,
           width: '90%',
-          maxHeight: '90vh',
+          maxHeight: '92vh',
           overflowY: 'auto',
           background: 'rgba(5, 5, 8, 0.98)',
           border: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: '2.5rem 1.8rem',
+          padding: hasDetailedStats ? '2.2rem 2rem' : '2.5rem 1.8rem',
           borderRadius: '4px',
           boxShadow: '0 25px 60px rgba(0, 0, 0, 0.95)',
           textAlign: 'center',
-          animation: 'fadeIn 0.5s ease-out'
+          animation: 'fadeIn 0.5s ease-out',
+          transition: 'max-width 0.3s ease-in-out, padding 0.3s ease-in-out',
+          boxSizing: 'border-box'
         }}
       >
         {/* Futuristic Aesthetic Corner Brackets */}
@@ -133,6 +198,78 @@ export default function GameOver({ score, wave, isMultiplayer, teamPlayers, typi
             text-shadow: 0 0 5px rgba(207, 64, 66, 0.3);
             letter-spacing: 4px;
           }
+
+          /* Scrollbar and custom layout rules */
+          .glass-panel-custom::-webkit-scrollbar {
+            display: none !important;
+          }
+          .glass-panel-custom {
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
+          }
+
+          .typing-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.2rem;
+            margin-top: 1rem;
+            width: 100%;
+          }
+          
+          @media (min-width: 768px) {
+            .typing-stats-grid.players-2 {
+              grid-template-columns: repeat(2, 1fr);
+            }
+            .typing-stats-grid.players-3 {
+              grid-template-columns: repeat(3, 1fr);
+            }
+            .typing-stats-grid.players-4 {
+              grid-template-columns: repeat(4, 1fr);
+            }
+          }
+
+          .player-stat-card {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            padding: 1.2rem 1rem;
+            text-align: left;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+          }
+          
+          .player-stat-card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.02);
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4);
+          }
+
+          .stat-card-header {
+            display: flex; 
+            justify-content: space-between; 
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06); 
+            padding-bottom: 0.5rem; 
+            margin-bottom: 0.8rem;
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+          }
+
+          .stat-card-grid {
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 0.5rem 1rem; 
+            font-size: 0.8rem; 
+            font-family: var(--font-body);
+          }
+
+          .stat-card-grid span {
+            color: var(--text-secondary);
+          }
+
+          .stat-card-grid strong {
+            font-weight: 600;
+          }
         `}</style>
 
         {isSacrificeWave ? (
@@ -159,72 +296,7 @@ export default function GameOver({ score, wave, isMultiplayer, teamPlayers, typi
               Thank you, now your friends are safe.
             </div>
 
-            {typingStats && typingStats.length > 0 && (
-              <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '1.2rem', textAlign: 'left', marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem', fontFamily: 'var(--font-display)', opacity: 0.6, textAlign: 'center' }}>
-                  TYPING DIAGNOSTICS
-                </div>
-                {typingStats.map((pStat) => (
-                  <div key={pStat.socketId} style={{ 
-                    background: 'rgba(255, 255, 255, 0.01)', 
-                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                    borderRadius: '4px',
-                    padding: '0.9rem',
-                    marginBottom: '0.8rem',
-                    textAlign: 'left'
-                  }}>
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.06)', 
-                      paddingBottom: '0.4rem', 
-                      marginBottom: '0.6rem',
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '0.85rem',
-                      letterSpacing: '1px'
-                    }}>
-                      <span style={{ color: pStat.color ? `var(--neon-${pStat.color})` : '#ffffff', fontWeight: 'bold' }}>
-                        {pStat.username}
-                      </span>
-                      <span style={{ color: 'var(--neon-blue)' }}>
-                        {(pStat.score !== undefined ? pStat.score : pStat.correctStrikes * 10).toLocaleString()} PTS
-                      </span>
-                    </div>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 1rem', fontSize: '0.8rem', fontFamily: 'var(--font-body)' }}>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>Speed:</span>{' '}
-                        <strong style={{ color: '#ffffff' }}>{pStat.wpm} WPM</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>Accuracy:</span>{' '}
-                        <strong style={{ color: '#a3e635' }}>{pStat.accuracy}%</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>Strikes:</span>{' '}
-                        <strong style={{ color: 'var(--neon-blue)' }}>{pStat.correctStrikes}</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>Typos:</span>{' '}
-                        <strong style={{ color: 'var(--neon-red)' }}>{pStat.typos}</strong>
-                      </div>
-                      <div style={{ gridColumn: 'span 2', borderTop: '1px dotted rgba(255, 255, 255, 0.05)', paddingTop: '0.4rem', marginTop: '0.2rem' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Longest Word:</span>{' '}
-                        <strong style={{ color: '#f59e0b', fontFamily: 'monospace' }}>
-                          {pStat.longestWord || 'None'}
-                        </strong>
-                      </div>
-                      <div style={{ gridColumn: 'span 2' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Favorite Word:</span>{' '}
-                        <strong style={{ color: '#c084fc', fontFamily: 'monospace' }}>
-                          {pStat.favoriteWord || 'None'}
-                        </strong>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {renderTypingDiagnostics()}
 
             {renderActionButtons('Return to Main Menu to Start Over')}
           </>
@@ -251,70 +323,7 @@ export default function GameOver({ score, wave, isMultiplayer, teamPlayers, typi
             </div>
 
             {typingStats && typingStats.length > 0 ? (
-              <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '1.2rem', textAlign: 'left' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem', fontFamily: 'var(--font-display)', opacity: 0.6, textAlign: 'center' }}>
-                  TYPING DIAGNOSTICS
-                </div>
-                {typingStats.map((pStat) => (
-                  <div key={pStat.socketId} style={{ 
-                    background: 'rgba(255, 255, 255, 0.01)', 
-                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                    borderRadius: '4px',
-                    padding: '0.9rem',
-                    marginBottom: '0.8rem',
-                    textAlign: 'left'
-                  }}>
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      borderBottom: '1px solid rgba(255, 255, 255, 0.06)', 
-                      paddingBottom: '0.4rem', 
-                      marginBottom: '0.6rem',
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '0.85rem',
-                      letterSpacing: '1px'
-                    }}>
-                      <span style={{ color: pStat.color ? `var(--neon-${pStat.color})` : '#ffffff', fontWeight: 'bold' }}>
-                        {pStat.username}
-                      </span>
-                      <span style={{ color: 'var(--neon-blue)' }}>
-                        {(pStat.score !== undefined ? pStat.score : pStat.correctStrikes * 10).toLocaleString()} PTS
-                      </span>
-                    </div>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem 1rem', fontSize: '0.8rem', fontFamily: 'var(--font-body)' }}>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>Speed:</span>{' '}
-                        <strong style={{ color: '#ffffff' }}>{pStat.wpm} WPM</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>Accuracy:</span>{' '}
-                        <strong style={{ color: '#a3e635' }}>{pStat.accuracy}%</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>Strikes:</span>{' '}
-                        <strong style={{ color: 'var(--neon-blue)' }}>{pStat.correctStrikes}</strong>
-                      </div>
-                      <div>
-                        <span style={{ color: 'var(--text-secondary)' }}>Typos:</span>{' '}
-                        <strong style={{ color: 'var(--neon-red)' }}>{pStat.typos}</strong>
-                      </div>
-                      <div style={{ gridColumn: 'span 2', borderTop: '1px dotted rgba(255, 255, 255, 0.05)', paddingTop: '0.4rem', marginTop: '0.2rem' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Longest Word:</span>{' '}
-                        <strong style={{ color: '#f59e0b', fontFamily: 'monospace' }}>
-                          {pStat.longestWord || 'None'}
-                        </strong>
-                      </div>
-                      <div style={{ gridColumn: 'span 2' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Favorite Word:</span>{' '}
-                        <strong style={{ color: '#c084fc', fontFamily: 'monospace' }}>
-                          {pStat.favoriteWord || 'None'}
-                        </strong>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              renderTypingDiagnostics()
             ) : (
               isMultiplayer && teamPlayers && teamPlayers.length > 0 && (
                 <div style={{ marginTop: '2.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '1.5rem' }}>
