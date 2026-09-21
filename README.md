@@ -40,6 +40,10 @@ VanguarDZ is a premium, minimal, and immersive 2D multiplayer typing game. Playe
 ### 🌌 Docking Station & Shop
 *   Every 5 waves, players dock their ships to purchase and upgrade **Tactical Abilities** using credits earned from streaks and boss defeats.
 
+### ⌨️ Developer Lexical Core ("Code Mode")
+*   Switch vocabulary packs on the fly in Solo Mode between **Standard English**, **Python**, **JavaScript**, **Java / C++**, and **Terminal / Bash**.
+*   All programming packs are curated with pure lowercase alphanumeric syntax (`a-z`) and partitioned into short, medium, and long wave tiers for seamless high-speed touch typing without shift-key disruption.
+
 ---
 
 ## 🛸 Tactical Threat Index (Enemy Registry)
@@ -83,7 +87,7 @@ Run the Express + WebSocket server:
 ```bash
 node server.js
 ```
-The game will now be hosted on [http://localhost:3001](http://localhost:3001). Open multiple browser windows to test the multiplayer lobbies and leaderboard synchronization!
+The game will now be hosted on [http://localhost:3000](http://localhost:3000). Open multiple browser windows to test the multiplayer lobbies and leaderboard synchronization!
 
 > [!TIP]
 > For active frontend development with hot-reloading, run `npm run dev` alongside the backend server.
