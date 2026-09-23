@@ -8,6 +8,22 @@ export default defineConfig({
   base: './', // Ensures assets load using relative paths (e.g. file:// protocol compatibility)
   build: {
     outDir: path.resolve(__dirname, 'dist'), // Compiles directly into desktop-app/dist
-    emptyOutDir: true
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/@supabase')) {
+            return 'vendor-supabase';
+          }
+          if (id.includes('node_modules/@vercel')) {
+            return 'vendor-analytics';
+          }
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600
   }
 });

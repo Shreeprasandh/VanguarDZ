@@ -4,17 +4,44 @@ import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+// Security headers
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'dist')));
 
 const server = createServer(app);
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ 
+  server,
+  maxPayload: 64 * 1024 // 64 KB max payload to prevent memory abuse
+});
+
+// Periodic keepalive ping to eliminate ghost sockets and bypass cloud proxy timeouts (Render 55s idle drop)
+const heartbeatInterval = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) {
+      return ws.terminate();
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30000);
+
+wss.on('close', () => {
+  clearInterval(heartbeatInterval);
+});
 
 // Data structures
 const onlinePlayers = new Map(); // socketId -> { socket, username, score, level, state: 'lobby'|'playing', roomId }
@@ -68,6 +95,16 @@ function getRoomPlayersData(roomId) {
 wss.on('connection', (ws) => {
   const socketId = Math.random().toString(36).substring(2, 9);
   
+  // Keepalive heartbeat status
+  ws.isAlive = true;
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
+
+  // Message rate limiter (max 60 messages/sec per socket)
+  let msgCount = 0;
+  let lastWindow = Date.now();
+
   // Set initial player record
   onlinePlayers.set(socketId, {
     socket: ws,
@@ -86,7 +123,32 @@ wss.on('connection', (ws) => {
 
   ws.on('message', (message) => {
     try {
+      // Throttle abusive spamming
+      const now = Date.now();
+      if (now - lastWindow > 1000) {
+        msgCount = 0;
+        lastWindow = now;
+      }
+      msgCount++;
+      if (msgCount > 60) {
+        return; // Drop excess frames
+      }
+
       const data = JSON.parse(message);
+
+      // Handle application-level ping/pong keepalive
+      if (data.type === 'PING') {
+        ws.isAlive = true;
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'PONG' }));
+        }
+        return;
+      }
+      if (data.type === 'PONG') {
+        ws.isAlive = true;
+        return;
+      }
+
       const player = onlinePlayers.get(socketId);
       if (!player) return;
 

@@ -29,3 +29,9 @@ public/*.exe
 .env
 .env.*
 !.env.example
+
+# Scribe Master Study Notebook & Presentation Decks (Rule 19)
+*_MASTER_STUDY_NOTEBOOK.md
+*.pdf
+*.pptx
+scratch/

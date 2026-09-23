@@ -1,9 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://sonmafrtldaiymqirmuv.supabase.co';
-const supabaseAnonKey = 'sb_publishable_0V2SUUQ-xuuf9yPxAh3bMg_DfaRltt9';
+const supabaseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL)
+  || 'https://sonmafrtldaiymqirmuv.supabase.co';
+const supabaseAnonKey = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY)
+  || 'sb_publishable_0V2SUUQ-xuuf9yPxAh3bMg_DfaRltt9';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+/**
+ * Derives a salted SHA-256 hash for pilot passwords using the Web Crypto API
+ */
+export async function hashPassword(username, password) {
+  if (!password) return '';
+  const normalizedUser = username.trim().toLowerCase();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(`vanguardz:${normalizedUser}:${password}`);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 export async function registerPilot(username, password) {
   const normalizedUser = username.trim().toLowerCase();
@@ -34,13 +49,15 @@ export async function registerPilot(username, password) {
     return v.toString(16);
   });
 
-  // 3. Insert new pilot profile with password
+  const hashedPassword = await hashPassword(normalizedUser, password);
+
+  // 3. Insert new pilot profile with salted hash
   const { error: insertError } = await supabase
     .from('profiles')
     .insert({
       id: uuid,
       username: normalizedUser,
-      password: password,
+      password: hashedPassword,
       max_unlocked_checkpoint: 0
     });
 
@@ -73,16 +90,27 @@ export async function loginPilot(username, password) {
     throw new Error('The entered callsign does not match any active pilot profiles.');
   }
 
-  // 2. Validate password
-  if (profile.password && profile.password !== password) {
-    throw new Error('The access key entered is incorrect.');
-  }
+  const hashedPassword = await hashPassword(normalizedUser, password);
 
-  // 3. If profile exists but didn't have password saved yet, save it now (backward compatibility)
-  if (!profile.password) {
+  // 2. Validate password (supports both SHA-256 hashed and legacy plain-text entries)
+  if (profile.password) {
+    const isMatch = profile.password === hashedPassword || profile.password === password;
+    if (!isMatch) {
+      throw new Error('The access key entered is incorrect.');
+    }
+
+    // Auto-migrate legacy plain-text password to salted SHA-256 hash on successful login
+    if (profile.password === password) {
+      await supabase
+        .from('profiles')
+        .update({ password: hashedPassword })
+        .eq('username', normalizedUser);
+    }
+  } else {
+    // If profile exists without password saved yet, hash and save it now
     await supabase
       .from('profiles')
-      .update({ password: password })
+      .update({ password: hashedPassword })
       .eq('username', normalizedUser);
   }
 

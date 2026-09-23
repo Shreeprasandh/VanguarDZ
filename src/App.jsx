@@ -292,13 +292,31 @@ export default function App() {
 
   // Set up WebSocket Connection
   useEffect(() => {
-    const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-      ? 'ws://localhost:3000'
-      : 'wss://vanguardz.onrender.com';
+    const getSocketUrl = () => {
+      // 1. Explicit environment variable override
+      if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_WS_URL) {
+        return import.meta.env.VITE_WS_URL;
+      }
+      // 2. Local development
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'ws://localhost:3000';
+      }
+      // 3. Desktop app (Electron file://) or Vercel static deployment -> point to production Render backend
+      if (window.location.protocol === 'file:' || (hostname && hostname.endsWith('vercel.app'))) {
+        return 'wss://vanguardz.onrender.com';
+      }
+      // 4. Unified deployment where backend serves frontend on Render / custom domain
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${wsProtocol}//${window.location.host}`;
+    };
+
+    const socketUrl = getSocketUrl();
     console.log(`Connecting to WebSocket: ${socketUrl}`);
 
     let socketOpen = false;
     let wakeupTimer = null;
+    let pingInterval = null;
     let active = true;
 
     const connect = () => {
@@ -335,6 +353,15 @@ export default function App() {
         setSocketConnected(true);
         setShowServerWakeup(false);
         if (wakeupTimer) clearTimeout(wakeupTimer);
+
+        // Periodic application-level keepalive ping every 25 seconds
+        if (pingInterval) clearInterval(pingInterval);
+        pingInterval = setInterval(() => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'PING' }));
+          }
+        }, 25000);
+
         // Register current username and color on connect
         socket.send(JSON.stringify({
           type: 'REGISTER',
@@ -347,6 +374,16 @@ export default function App() {
         if (!active) return;
         try {
           const data = JSON.parse(event.data);
+
+          // Handle server keepalive ping
+          if (data.type === 'PING') {
+            socket.send(JSON.stringify({ type: 'PONG' }));
+            return;
+          }
+          if (data.type === 'PONG') {
+            return;
+          }
+
           switch (data.type) {
             case 'REGISTERED':
               socket.id = data.socketId;
@@ -450,6 +487,7 @@ export default function App() {
     return () => {
       active = false;
       if (wakeupTimer) clearTimeout(wakeupTimer);
+      if (pingInterval) clearInterval(pingInterval);
       if (socketRef.current) {
         socketRef.current.onclose = null;
         socketRef.current.close();

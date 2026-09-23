@@ -1,11 +1,12 @@
 {
-  "name": "wordgame",
+  "name": "vanguardz",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "test": "node --test tests/game.test.js",
     "lint": "oxlint",
     "preview": "vite preview",
     "desktop:build": "npm run build --prefix desktop-app",

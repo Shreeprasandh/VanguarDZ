@@ -433,7 +433,7 @@ class AudioManager {
         
         osc.start();
         osc.stop(t + 0.2);
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -466,7 +466,7 @@ class AudioManager {
         sweep.start();
         osc.stop(t + 0.3);
         sweep.stop(t + 0.3);
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -504,7 +504,7 @@ class AudioManager {
         noise.start();
         osc.stop(t + 0.35);
         noise.stop(t + 0.35);
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -542,7 +542,7 @@ class AudioManager {
         osc2.start(t + 0.15);
         osc1.stop(t + 0.4);
         osc2.stop(t + 0.6);
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -575,7 +575,7 @@ class AudioManager {
         buzz.start();
         osc.stop(t + 0.25);
         buzz.stop(t + 0.25);
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -613,7 +613,7 @@ class AudioManager {
         osc.start();
         modulator.stop(t + 0.7);
         osc.stop(t + 0.7);
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -644,7 +644,7 @@ class AudioManager {
         
         osc.start();
         osc.stop(t + 0.5);
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -669,7 +669,7 @@ class AudioManager {
         
         osc.start();
         osc.stop(t + 0.2);
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -704,7 +704,7 @@ class AudioManager {
           osc.start(t + delay);
           osc.stop(t + delay + 0.5);
         }
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -725,7 +725,7 @@ class AudioManager {
         connectPanner(ctx, gain, pan);
         osc.start();
         osc.stop(t + 0.15);
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -746,7 +746,7 @@ class AudioManager {
         connectPanner(ctx, gain, pan);
         osc.start();
         osc.stop(t + 0.2);
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -772,7 +772,7 @@ class AudioManager {
         connectPanner(ctx, gain, pan);
         osc.start();
         osc.stop(t + 0.3);
-      } catch(e) {}
+      } catch {}
       return;
     }
 
@@ -784,7 +784,7 @@ class AudioManager {
         // Clone audio node to allow playing multiple instances concurrently
         const playClone = audio.cloneNode();
         playClone.volume = soundName === 'plasma' ? 0.3 : 0.6;
-        playClone.play().catch(err => {
+        playClone.play().catch(() => {
           // Silently catch browser autoplay prevention errors
         });
       }
@@ -965,7 +965,6 @@ class AudioManager {
     if (this.menuChordInterval) clearInterval(this.menuChordInterval);
     this.menuChordInterval = null;
     
-    const ctx = this.menuAudioCtx;
     const gainNode = this.menuMasterGain;
     if (gainNode) {
       try {
@@ -975,12 +974,12 @@ class AudioManager {
         setTimeout(() => {
           try {
             gainNode.disconnect();
-          } catch(e) {}
+          } catch {}
         }, 1100);
-      } catch (e) {
+      } catch {
         try {
           gainNode.disconnect();
-        } catch(err) {}
+        } catch {}
       }
     }
     this.menuAudioCtx = null;
@@ -1111,7 +1110,7 @@ class AudioManager {
         chordIdx = (chordIdx + 1) % activeChords.length;
         
         // Play the 3 chord voices
-        chord.forEach((freq, idx) => {
+        chord.forEach((freq) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           gain.gain.value = 0.0001;
@@ -1253,7 +1252,6 @@ class AudioManager {
     this.ingameChordInterval = null;
     this.ingameChimeInterval = null;
     
-    const ctx = this.ingameAudioCtx;
     const gainNode = this.ingameMasterGain;
     if (gainNode) {
       try {
@@ -1263,12 +1261,12 @@ class AudioManager {
         setTimeout(() => {
           try {
             gainNode.disconnect();
-          } catch(e) {}
+          } catch {}
         }, 1100);
-      } catch (e) {
+      } catch {
         try {
           gainNode.disconnect();
-        } catch(err) {}
+        } catch {}
       }
     }
     this.ingameAudioCtx = null;
@@ -1353,7 +1351,7 @@ class AudioManager {
       this.musicPlaying = true;
       
       if (!this.muted) {
-        this.music.play().catch(err => {
+        this.music.play().catch(() => {
           // Handled via user interaction resume
         });
       }
