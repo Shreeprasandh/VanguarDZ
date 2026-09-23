@@ -1,4 +1,5 @@
 // A structured dictionary of official English words of different lengths
+import { getLexiconWord } from './lexicons.js';
 // Split into Common (daily used) and Rare (uncommon/technical) lists
 // to weight the spawner towards high-frequency terms while keeping variety.
 
@@ -247,7 +248,12 @@ export async function initDictionary() {
   }
 }
 
-export function getWordForEnemy(type, waveNumber, usedSet) {
+export function getWordForEnemy(type, waveNumber, usedSet, packId = 'english') {
+  if (packId && packId !== 'english') {
+    const customWord = getLexiconWord(packId, waveNumber, usedSet, type);
+    if (customWord) return customWord;
+  }
+
   let commonCandidates = [];
   let rareCandidates = [];
 

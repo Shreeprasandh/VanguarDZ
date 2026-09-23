@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { GameAudio } from '../game/audio';
-import { getWordForEnemy } from '../game/words';
+import { getWordForEnemy as getRawWordForEnemy } from '../game/words';
 import GameHUD from './GameHUD';
 import { SKILLS_DB } from './SkillsData';
 
@@ -34,8 +34,12 @@ export default function GameCanvas({
   onSaveCheckpoint,
   bossShieldsCount = 0,
   onBossShieldsChange,
-  initialStats
+  initialStats,
+  lexicon = 'english'
 }) {
+  const activeLexicon = isMultiplayer ? 'english' : (lexicon || 'english');
+  const getWordForEnemy = (type, wave, usedWords) => getRawWordForEnemy(type, wave, usedWords, activeLexicon);
+
   const getColorHex = (colorName) => {
     if (colorName === 'red') return '#cf4042'; // Muted Crimson
     if (colorName === 'blue') return '#4a90e2'; // Sleek Slate Blue

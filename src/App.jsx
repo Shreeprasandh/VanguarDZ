@@ -11,6 +11,7 @@ import StoryModal from './components/StoryModal';
 import FeedbackModal from './components/FeedbackModal';
 import DockingStation from './components/DockingStation';
 import InfoPopup from './components/InfoPopup';
+import LexiconSelector from './components/LexiconSelector';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import { loginPilot, registerPilot, saveCheckpoint, saveHighScore, supabase, getLeaderboard } from './game/supabase';
@@ -19,6 +20,9 @@ import { initDictionary } from './game/words';
 export default function App() {
   const isElectron = window.navigator.userAgent.toLowerCase().includes('electron') || window.location.protocol === 'file:';
   // Profile settings (persisted in localStorage)
+  const [selectedLexicon, setSelectedLexicon] = useState(() => {
+    return localStorage.getItem('vanguardz_lexicon') || 'english';
+  });
   const [username, setUsername] = useState(() => {
     return localStorage.getItem('cybertype_username') || `Pilot-${Math.floor(1000 + Math.random() * 9000)}`;
   });
@@ -986,6 +990,7 @@ export default function App() {
             bossShieldsCount={bossShieldsCount}
             onBossShieldsChange={setBossShieldsCount}
             initialStats={accumulatedStats}
+            lexicon={selectedLexicon}
           />
         );
 
@@ -1014,6 +1019,7 @@ export default function App() {
             typingStats={typingStats}
             onReturnMenu={handleReturnMenu}
             onReturnLobby={handleReturnLobby}
+            lexicon={selectedLexicon}
           />
         );
 
@@ -1042,7 +1048,17 @@ export default function App() {
           }}
         >
           {/* Main system action buttons (Speaker / Info / Logout) */}
-          <div style={{ display: 'flex', gap: '0.8rem' }}>
+          <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+            {isLoggedIn && (
+              <LexiconSelector 
+                activeLexicon={selectedLexicon} 
+                shipColor={shipColor}
+                onSelectLexicon={(packId) => {
+                  setSelectedLexicon(packId);
+                  localStorage.setItem('vanguardz_lexicon', packId);
+                }} 
+              />
+            )}
             {isLoggedIn && (
               <button 
                 className="system-btn" 

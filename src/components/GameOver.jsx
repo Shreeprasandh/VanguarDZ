@@ -1,7 +1,7 @@
 import React from 'react';
 import { GameAudio } from '../game/audio';
 
-export default function GameOver({ score, wave, isMultiplayer, teamPlayers, typingStats = [], onReturnMenu, onReturnLobby }) {
+export default function GameOver({ score, wave, isMultiplayer, teamPlayers, typingStats = [], onReturnMenu, onReturnLobby, lexicon = 'english' }) {
   const handleReturn = () => {
     GameAudio.play('click');
     onReturnMenu();
@@ -54,7 +54,7 @@ export default function GameOver({ score, wave, isMultiplayer, teamPlayers, typi
     return (
       <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '1.2rem', textAlign: 'left' }}>
         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '1.2rem', fontFamily: 'var(--font-display)', opacity: 0.6, textAlign: 'center' }}>
-          TYPING DIAGNOSTICS
+          TYPING DIAGNOSTICS {!isMultiplayer && lexicon && lexicon !== 'english' ? `[ ${lexicon.toUpperCase()} ]` : ''}
         </div>
         <div className={`typing-stats-grid players-${typingStats.length}`}>
           {typingStats.map((pStat) => (
