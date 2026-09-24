@@ -302,21 +302,23 @@ export default function App() {
         return import.meta.env.VITE_WS_URL;
       }
       // 2. Local development
-      const hostname = window.location.hostname;
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
       if (hostname === 'localhost' || hostname === '127.0.0.1') {
         return 'ws://localhost:3000';
       }
-      // 3. Desktop app (Electron file://) or Vercel static deployment -> point to production Render backend
-      if (window.location.protocol === 'file:' || (hostname && hostname.endsWith('vercel.app'))) {
-        return 'wss://vanguardz.onrender.com';
-      }
-      // 4. Unified deployment where backend serves frontend on Render / custom domain
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      return `${wsProtocol}//${window.location.host}`;
+      // 3. Remote production backend (Render) for all web deployments (including custom domain vanguardz.in, vercel.app) and desktop app
+      return 'wss://vanguardz.onrender.com';
     };
 
     const socketUrl = getSocketUrl();
     console.log(`Connecting to WebSocket: ${socketUrl}`);
+
+    // Trigger proactive HTTP wake-up ping for Render sleeping instances
+    if (socketUrl.includes('onrender.com') && typeof window !== 'undefined' && window.fetch) {
+      try {
+        fetch('https://vanguardz.onrender.com', { mode: 'no-cors' }).catch(() => {});
+      } catch (_) {}
+    }
 
     let socketOpen = false;
     let wakeupTimer = null;
@@ -331,6 +333,13 @@ export default function App() {
           setShowServerWakeup(true);
         }
       }, 1800);
+
+      // Ping Render HTTP endpoint on reconnect to kickstart cold starts
+      if (socketUrl.includes('onrender.com') && typeof window !== 'undefined' && window.fetch) {
+        try {
+          fetch('https://vanguardz.onrender.com', { mode: 'no-cors' }).catch(() => {});
+        } catch (_) {}
+      }
 
       const socket = new WebSocket(socketUrl);
       
